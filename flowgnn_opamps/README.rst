@@ -1,28 +1,3 @@
-.. These are examples of badges you might want to add to your README:
-   please update the URLs accordingly
-
-    .. image:: https://api.cirrus-ci.com/github/<USER>/flowgnn_opamps.svg?branch=main
-        :alt: Built Status
-        :target: https://cirrus-ci.com/github/<USER>/flowgnn_opamps
-    .. image:: https://readthedocs.org/projects/flowgnn_opamps/badge/?version=latest
-        :alt: ReadTheDocs
-        :target: https://flowgnn_opamps.readthedocs.io/en/stable/
-    .. image:: https://img.shields.io/coveralls/github/<USER>/flowgnn_opamps/main.svg
-        :alt: Coveralls
-        :target: https://coveralls.io/r/<USER>/flowgnn_opamps
-    .. image:: https://img.shields.io/pypi/v/flowgnn_opamps.svg
-        :alt: PyPI-Server
-        :target: https://pypi.org/project/flowgnn_opamps/
-    .. image:: https://img.shields.io/conda/vn/conda-forge/flowgnn_opamps.svg
-        :alt: Conda-Forge
-        :target: https://anaconda.org/conda-forge/flowgnn_opamps
-    .. image:: https://pepy.tech/badge/flowgnn_opamps/month
-        :alt: Monthly Downloads
-        :target: https://pepy.tech/project/flowgnn_opamps
-    .. image:: https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Twitter
-        :alt: Twitter
-        :target: https://twitter.com/flowgnn_opamps
-
 .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
     :alt: Project generated with PyScaffold
     :target: https://pyscaffold.org/
@@ -30,15 +5,29 @@
 |
 
 ==============
-flowgnn_opamps
+FlowGNN on Ckt-Bench101
 ==============
 
 
-    Add a short description here!
+    Code for the experiments with the FlowGNN models on the operational amplifiers from the Ckt-Bench101 dataset.
 
 
-A longer description of your project goes here...
+==============
+Installation
+==============
 
+**Requirements**
+
+- CPU or NVIDIA GPU
+- Linux / Windows
+- Python 3.12
+- PyTorch 2.4.0
+- PyTorch Geometric 2.6.0
+
+.. code-block:: python
+
+   pip install -r requirements.txt
+   pip install .
 
 .. _pyscaffold-notes:
 
