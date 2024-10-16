@@ -41,12 +41,12 @@ else:
     device = "cpu"
 
 # Pathes to data
-pygraph_file = "./../data/ckt_bench_101_pygraph_2-5.pkl" # Graph data
+pygraph_file = "./../data/ckt_bench_101_tg26.pkl" # Graph data
 igraph_file = "./../data/ckt_bench_101.pkl" # Graph data
 target_file = "./../data/perform101.csv" # Target properties
 
 # Experimental setup
-num_runs = 10
+num_runs = 1
 start_run = 0
 seeds = [4, 42, 420, 4204, 42042, 420420, 4204204, 42042042, 420420420, 4204204204]
 model_names = ["flowgat", "flowgatv2", "flowtransformer", "daflowgnn-1", "daflowgnn-2"]

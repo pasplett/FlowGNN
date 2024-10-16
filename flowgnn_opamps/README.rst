@@ -29,6 +29,34 @@ Installation
    pip install -r requirements.txt
    pip install .
 
+
+==============
+Data
+==============
+
+The Ckt-Bench101 dataset is available at https://github.com/zehao-dong/CktGNN/tree/main/OCB/CktBench101.
+
+Download the following files and place them inside the "data" folder:
+
+- ckt_bench_101.pkl (Graphs)
+- perform101.csv (Labels)
+
+The graphs contained in "ckt_bench_101.pkl" are in igraph-format. To convert them into torch-geometric-2.6 format,
+use the notebook "data_conversion.ipynb". It will create a file called "ckt_bench_101_tg26.pkl", which can be used
+to train the models.
+
+==============
+Training
+==============
+
+To train any model, use the script "supervised_experiment.py". Specify your settings in the script ("Experimental 
+settings" and "Training hyperparameters") and run it via
+
+.. code-block:: python
+
+    python supervised_experiment.py
+
+
 .. _pyscaffold-notes:
 
 Note
