@@ -19,15 +19,20 @@ Installation
 **Requirements**
 
 - CPU or NVIDIA GPU
-- Linux / Windows
-- Python 3.12
+- Linux or Windows
+- Python 3.9
 - PyTorch 2.4.0
 - PyTorch Geometric 2.6.0
 
 .. code-block:: python
 
-   pip install -r requirements.txt
-   pip install .
+   conda create -n flowgnn-env python=3.9
+   conda activate flowgnn-env
+   pip3 install torch==2.4.0 torchvision --index-url https://download.pytorch.org/whl/cu118
+   pip3 install torch_geometric==2.6.0
+   pip3 install torch_sparse -f https://data.pyg.org/whl/torch-2.4.0+cu118.html
+   pip3 install -r requirements_{os}.txt # Install remaining packages, e.g. igraph. Linux: os=linux, Windows: os=win.
+   pip3 install . # In flowgnn_opamps folder
 
 
 ==============
