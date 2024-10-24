@@ -61,6 +61,9 @@ settings" and "Training hyperparameters") and run it via
 
     python supervised_experiment.py
 
+Feel free to use the notebook "experiment_analysis.ipynb" to plot training curves and leaderboards.
+
+
 
 .. _pyscaffold-notes:
 
