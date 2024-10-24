@@ -37,8 +37,13 @@ Any = object()
 
 
 class FlowGATConv(MessagePassing):
-    r"""The graph attentional operator from the `"Graph Attention Networks"
-    <https://arxiv.org/abs/1710.10903>`_ paper.
+    r"""The flow graph attentional operator from the `"Flow Graph Neural Networks"
+    <https://openreview.net/forum?id=iKI7wT6fCP>`_ paper. The code is based on
+    the torch_geometric.nn.GATConv operator from the `"Graph Attention Networks"
+    <https://arxiv.org/abs/1710.10903`_ paper.
+
+    In contrast to GATConv, FlowGATConv normalizes attention coefficiencts across
+    outgoing edges instead of incoming edges.
 
     .. math::
         \mathbf{x}^{\prime}_i = \alpha_{i,i}\mathbf{\Theta}_{s}\mathbf{x}_{i} +
@@ -54,10 +59,10 @@ class FlowGATConv(MessagePassing):
         \mathbf{a}^{\top}_{s} \mathbf{\Theta}_{s}\mathbf{x}_i
         + \mathbf{a}^{\top}_{t} \mathbf{\Theta}_{t}\mathbf{x}_j
         \right)\right)}
-        {\sum_{k \in \mathcal{N}(i) \cup \{ i \}}
+        {\sum_{k \in \mathcal{N}(j) \cup \{ j \}}
         \exp\left(\mathrm{LeakyReLU}\left(
-        \mathbf{a}^{\top}_{s} \mathbf{\Theta}_{s}\mathbf{x}_i
-        + \mathbf{a}^{\top}_{t}\mathbf{\Theta}_{t}\mathbf{x}_k
+        \mathbf{a}^{\top}_{s} \mathbf{\Theta}_{s}\mathbf{x}_k
+        + \mathbf{a}^{\top}_{t}\mathbf{\Theta}_{t}\mathbf{x}_j
         \right)\right)}.
 
     If the graph has multi-dimensional edge features :math:`\mathbf{e}_{i,j}`,
@@ -71,11 +76,11 @@ class FlowGATConv(MessagePassing):
         + \mathbf{a}^{\top}_{t} \mathbf{\Theta}_{t}\mathbf{x}_j
         + \mathbf{a}^{\top}_{e} \mathbf{\Theta}_{e} \mathbf{e}_{i,j}
         \right)\right)}
-        {\sum_{k \in \mathcal{N}(i) \cup \{ i \}}
+        {\sum_{k \in \mathcal{N}(j) \cup \{ j \}}
         \exp\left(\mathrm{LeakyReLU}\left(
-        \mathbf{a}^{\top}_{s} \mathbf{\Theta}_{s}\mathbf{x}_i
-        + \mathbf{a}^{\top}_{t} \mathbf{\Theta}_{t}\mathbf{x}_k
-        + \mathbf{a}^{\top}_{e} \mathbf{\Theta}_{e} \mathbf{e}_{i,k}
+        \mathbf{a}^{\top}_{s} \mathbf{\Theta}_{s}\mathbf{x}_k
+        + \mathbf{a}^{\top}_{t} \mathbf{\Theta}_{t}\mathbf{x}_j
+        + \mathbf{a}^{\top}_{e} \mathbf{\Theta}_{e} \mathbf{e}_{k,j}
         \right)\right)}.
 
     If the graph is not bipartite, :math:`\mathbf{\Theta}_{s} =
@@ -338,6 +343,9 @@ class FlowGATConv(MessagePassing):
                         "'edge_index' in a 'SparseTensor' form")
 
         # edge_updater_type: (alpha: OptPairTensor, edge_attr: OptTensor)
+        # FLOW-ATTENTION: Using flipped edge index to compute attention weights
+        # is equivalent to normalizing attention coefficients across outgoing 
+        # edges instead of incoming edges.
         alpha = self.edge_updater(torch.flip(edge_index, [0]), alpha=alpha, 
                                   edge_attr=edge_attr, size=size)
         
@@ -395,13 +403,19 @@ class FlowGATConv(MessagePassing):
     
 
 class FlowGATv2Conv(MessagePassing):
-    r"""The GATv2 operator from the `"How Attentive are Graph Attention
-    Networks?" <https://arxiv.org/abs/2105.14491>`_ paper, which fixes the
-    static attention problem of the standard
+    r"""The FlowGATv2 operator from the `"Flow Graph Neural Networks"
+    <https://openreview.net/forum?id=iKI7wT6fCP>`_ paper.
+    This operator is based on the torch_geometric.nn.GATv2Conv operator from the
+    `"How Attentive are Graph Attention Networks?"
+    <https://arxiv.org/abs/2105.14491>`_ paper, which 
+    fixes the static attention problem of the standard
     :class:`~torch_geometric.conv.GATConv` layer.
     Since the linear layers in the standard GAT are applied right after each
     other, the ranking of attended nodes is unconditioned on the query node.
     In contrast, in :class:`GATv2`, every node can attend to any other node.
+
+    In contrast to GATv2Conv, FlowGATv2Conv normalizes attention coefficiencts 
+    across outgoing edges instead of incoming edges.
 
     .. math::
         \mathbf{x}^{\prime}_i = \sum_{j \in \mathcal{N}(i) \cup \{ i \}}
@@ -415,9 +429,9 @@ class FlowGATv2Conv(MessagePassing):
         \exp\left(\mathbf{a}^{\top}\mathrm{LeakyReLU}\left(
         \mathbf{\Theta}_{s} \mathbf{x}_i + \mathbf{\Theta}_{t} \mathbf{x}_j
         \right)\right)}
-        {\sum_{k \in \mathcal{N}(i) \cup \{ i \}}
+        {\sum_{k \in \mathcal{N}(j) \cup \{ j \}}
         \exp\left(\mathbf{a}^{\top}\mathrm{LeakyReLU}\left(
-        \mathbf{\Theta}_{s} \mathbf{x}_i + \mathbf{\Theta}_{t} \mathbf{x}_k
+        \mathbf{\Theta}_{s} \mathbf{x}_k + \mathbf{\Theta}_{t} \mathbf{x}_j
         \right)\right)}.
 
     If the graph has multi-dimensional edge features :math:`\mathbf{e}_{i,j}`,
@@ -431,11 +445,11 @@ class FlowGATv2Conv(MessagePassing):
         + \mathbf{\Theta}_{t} \mathbf{x}_j
         + \mathbf{\Theta}_{e} \mathbf{e}_{i,j}
         \right)\right)}
-        {\sum_{k \in \mathcal{N}(i) \cup \{ i \}}
+        {\sum_{k \in \mathcal{N}(j) \cup \{ j \}}
         \exp\left(\mathbf{a}^{\top}\mathrm{LeakyReLU}\left(
-        \mathbf{\Theta}_{s} \mathbf{x}_i
-        + \mathbf{\Theta}_{t} \mathbf{x}_k
-        + \mathbf{\Theta}_{e} \mathbf{e}_{i,k}]
+        \mathbf{\Theta}_{s} \mathbf{x}_k
+        + \mathbf{\Theta}_{t} \mathbf{x}_j
+        + \mathbf{\Theta}_{e} \mathbf{e}_{k,j}]
         \right)\right)}.
 
     Args:
@@ -686,6 +700,9 @@ class FlowGATv2Conv(MessagePassing):
                         "'edge_index' in a 'SparseTensor' form")
 
         # edge_updater_type: (x: PairTensor, edge_attr: OptTensor)
+        # FLOW-ATTENTION: Using flipped edge index to compute attention weights
+        # is equivalent to normalizing attention coefficients across outgoing 
+        # edges instead of incoming edges.
         alpha = self.edge_updater(torch.flip(edge_index, [0]), x=(x_l, x_r),
                                   edge_attr=edge_attr)
 
@@ -745,9 +762,14 @@ class FlowGATv2Conv(MessagePassing):
 
 
 class FlowTransformerConv(MessagePassing):
-    r"""The graph transformer operator from the `"Masked Label Prediction:
-    Unified Message Passing Model for Semi-Supervised Classification"
+    r"""The flow graph transformer operator from the `"Flow Graph Neural Networks"
+    <https://openreview.net/forum?id=iKI7wT6fCP>`_ paper. It is based on the 
+    torch_geometric.nn.TransformerConv operator from the `"Masked Label 
+    Prediction: Unified Message Passing Model for Semi-Supervised Classification"
     <https://arxiv.org/abs/2009.03509>`_ paper.
+    
+    In contrast to TransformerConv, FlowTransformerConv normalizes attention 
+    coefficiencts across outgoing edges instead of incoming edges.
 
     .. math::
         \mathbf{x}^{\prime}_i = \mathbf{W}_1 \mathbf{x}_i +
@@ -757,7 +779,7 @@ class FlowTransformerConv(MessagePassing):
     multi-head dot product attention:
 
     .. math::
-        \alpha_{i,j} = \textrm{softmax} \left(
+        \alpha_{i,j} = \textrm{softmax}_i \left(
         \frac{(\mathbf{W}_3\mathbf{x}_i)^{\top} (\mathbf{W}_4\mathbf{x}_j)}
         {\sqrt{d}} \right)
 
@@ -802,7 +824,7 @@ class FlowTransformerConv(MessagePassing):
             computed via:
 
             .. math::
-                \alpha_{i,j} = \textrm{softmax} \left(
+                \alpha_{i,j} = \textrm{softmax}_i \left(
                 \frac{(\mathbf{W}_3\mathbf{x}_i)^{\top}
                 (\mathbf{W}_4\mathbf{x}_j + \mathbf{W}_6 \mathbf{e}_{ij})}
                 {\sqrt{d}} \right)
@@ -947,6 +969,9 @@ class FlowTransformerConv(MessagePassing):
 
         
         # edge_updater_type: (query: Tensor, key:Tensor, edge_attr: OptTensor)
+        # FLOW-ATTENTION: Using flipped edge index to compute attention weights
+        # is equivalent to normalizing attention coefficients across outgoing 
+        # edges instead of incoming edges.
         alpha = self.edge_updater(torch.flip(edge_index, [0]), query=query, 
                                   key=key, edge_attr=edge_attr)
 
