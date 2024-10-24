@@ -26,9 +26,9 @@ Installation
 
 Load every additional packages:
 
-```
-pip install -r requirements.txt
-```
+.. code-block:: python
+
+   pip install -r requirements.txt
 
 
 ==============
