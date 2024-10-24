@@ -1,3 +1,5 @@
+"""Original code copied from https://github.com/zehao-dong/CktGNN
+"""
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

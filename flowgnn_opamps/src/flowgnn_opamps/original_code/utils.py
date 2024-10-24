@@ -1,3 +1,5 @@
+"""Original code copied from https://github.com/zehao-dong/CktGNN
+"""
 import pandas as pd
 import numpy as np
 import tqdm

@@ -1,3 +1,5 @@
+"""Original code copied from https://github.com/zehao-dong/CktGNN
+"""
 import torch
 from torch import Tensor
 from torch_sparse import SparseTensor, cat

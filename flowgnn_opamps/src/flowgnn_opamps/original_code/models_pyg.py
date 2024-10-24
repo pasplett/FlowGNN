@@ -1,3 +1,5 @@
+"""Original code copied from https://github.com/zehao-dong/CktGNN
+"""
 import math
 import random
 import torch

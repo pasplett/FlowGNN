@@ -1,3 +1,5 @@
+"""Original code copied from https://github.com/zehao-dong/PACE
+"""
 from __future__ import print_function
 import gzip
 import pickle

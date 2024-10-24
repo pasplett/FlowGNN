@@ -1,3 +1,5 @@
+"""Original code copied from https://github.com/zehao-dong/CktGNN
+"""
 import os
 
 #path = os.path.abspath(__file__)
