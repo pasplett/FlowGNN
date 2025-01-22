@@ -12,6 +12,7 @@ from torch_geometric.nn import (
     global_mean_pool
 )
 from torch_geometric.utils import to_dense_adj
+from torch_geometric.nn.models import MLP
 
 from flowgnn_opamps.original_code.constants import *
 from flowgnn_opamps.original_code.models_ig import DVAE
@@ -584,3 +585,163 @@ class DAFlowGNN(nn.Module):
         x, edge_index, batch = g.x, g.edge_index, g.batch
         hg, _ = self._graph_embedding(x, edge_index, batch)
         return hg
+    
+
+class DAFlowGNN_DeepGRU(DAFlowGNN):
+
+    def __init__(
+            self, 
+            n_types=10,
+            n_feats=1, 
+            hid_channels=301, 
+            pred_hid_channels=64,
+            pred_out_channels=1,
+            num_layers=2,
+            dropout=0.5,
+            **kwargs
+        ):
+        super(DAFlowGNN_DeepGRU, self).__init__(
+            n_types=n_types, n_feats=n_feats, 
+            hid_channels=hid_channels,
+            pred_hid_channels=pred_hid_channels, 
+            pred_out_channels=pred_out_channels,
+            num_layers=num_layers, dropout=dropout, 
+            **kwargs
+        )
+        in_channels = n_types + n_feats
+        enc_gru_cells_forward = []
+        enc_gru_cells_backward = []
+        for l in range(self.num_layers):
+            enc_gru_cells_forward.append(
+                nn.GRU(hid_channels, hid_channels, num_layers=2)
+            )
+            enc_gru_cells_backward.append(
+                nn.GRU(in_channels, hid_channels, num_layers=2)
+            )
+            in_channels = hid_channels
+        self.enc_gru_cells_forward = nn.ModuleList(enc_gru_cells_forward)
+        self.enc_gru_cells_backward = nn.ModuleList(enc_gru_cells_backward)
+
+class DAFlowGNN_MLP(DAFlowGNN):
+
+    def __init__(
+            self, 
+            n_types=10,
+            n_feats=1, 
+            hid_channels=301, 
+            pred_hid_channels=64,
+            pred_out_channels=1,
+            num_layers=2,
+            dropout=0.5,
+            **kwargs
+        ):
+        super(DAFlowGNN_DeepGRU, self).__init__(
+            n_types=n_types, n_feats=n_feats, 
+            hid_channels=hid_channels,
+            pred_hid_channels=pred_hid_channels, 
+            pred_out_channels=pred_out_channels,
+            num_layers=num_layers, dropout=dropout, 
+            **kwargs
+        )
+        in_channels = n_types + n_feats
+        enc_gru_cells_forward = []
+        enc_gru_cells_backward = []
+        for l in range(self.num_layers):
+            enc_gru_cells_forward.append(
+                MLP(
+                    in_channels=hid_channels, 
+                    hidden_channels=hid_channels,
+                    out_channels=hid_channels, 
+                    num_layers=2
+                )
+            )
+            enc_gru_cells_backward.append(
+                MLP(
+                    in_channels=in_channels, 
+                    hidden_channels=hid_channels,
+                    out_channels=hid_channels, 
+                    num_layers=2
+                )
+            )
+            in_channels = hid_channels
+        self.enc_gru_cells_forward = nn.ModuleList(enc_gru_cells_forward)
+        self.enc_gru_cells_backward = nn.ModuleList(enc_gru_cells_backward)
+
+        # Prediction
+        self.fc_pred = nn.Sequential(
+            nn.Linear(num_layers * hid_channels * 2, pred_hid_channels),
+            nn.ReLU(),
+            nn.Linear(pred_hid_channels, pred_out_channels)
+        ) 
+
+
+    def _conv(self, x_bw, x_fw, edge_index, batch, layer, m0=None, device=None):
+        if device is None:
+            device = self.get_device()
+        
+        # Adjacency matrix
+        total_num_nodes = x_fw.shape[0]
+        A = self._to_dense(edge_index, total_num_nodes)
+
+        # Initialize att_weights, hidden state and initial message
+        att_weights = torch.zeros((total_num_nodes, total_num_nodes), device=device)
+        flow = torch.zeros((total_num_nodes, total_num_nodes), device=device)
+        h_fw = torch.zeros((x_fw.shape[0], self.hid_channels), device=device)
+        h_bw = torch.zeros((x_bw.shape[0], self.hid_channels), device=device)
+        if m0 is None:
+            m0 = torch.zeros((total_num_nodes, self.in_channels), device=device)
+
+        # Find positions of source and target nodes as well as 
+        # number of nodes per graph in batch
+        sources = torch.cat(
+            [torch.arange(total_num_nodes, device=device)[batch == i][:1] 
+             for i in torch.unique(batch)]
+        )
+        targets = torch.cat(
+            [torch.arange(total_num_nodes, device=device)[batch == i][-1:]
+             for i in torch.unique(batch)]
+        )
+        num_nodes_per_graph = targets - sources + 1
+        max_nodes = torch.max(num_nodes_per_graph)
+
+        # BACKWARD PASS
+        for i in range(max_nodes):
+            vs = targets - i
+            vs = vs[vs >= sources]
+            vs = F.one_hot(vs, total_num_nodes).sum(dim=0).reshape((total_num_nodes, 1))
+
+            # Aggregate
+            att_weights = torch.clone(att_weights) + self.att_aggr[layer](
+                x_bw, h_bw, (A * vs).T
+            )
+            if i == 0:
+                message = m0
+            else:
+                message = torch.matmul(att_weights.T, h_bw) * vs
+
+            # Update
+            h_bw = torch.clone(h_bw) + self.enc_gru_cells_backward[layer](x_bw + message) * vs
+
+        # FORWARD PASS
+        for i in range(max_nodes):
+
+            vs = sources + i
+            vs = vs[i < num_nodes_per_graph]
+            vs = F.one_hot(vs, total_num_nodes).sum(dim=0).reshape((total_num_nodes, 1))
+
+            # Aggregate
+            if i == 0:
+                message = h_bw * vs
+            else:
+                message = torch.matmul(flow.T, h_fw) * vs
+
+            # Combine
+            h_fw = torch.clone(h_fw) + self.enc_gru_cells_forward[layer](h_bw + message) * vs
+
+            # Flow update
+            if i < max_nodes - 1:
+                flow = torch.clone(flow) + self.flow_predictors[layer](
+                    h_bw, h_fw, A * vs
+                )
+
+        return h_bw, h_fw, att_weights, flow
