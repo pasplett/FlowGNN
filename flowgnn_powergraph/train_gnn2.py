@@ -611,24 +611,24 @@ if __name__ == "__main__":
     tasks = ['multiclass'] #['binary', 'multiclass', 'regression']
     powergrids = ['ieee24'] #['ieee24', 'uk', 'ieee39', 'ieee118']
     models = ['flowgat', 'flowgatv2', 'flowtransformer']
-    for rnd_seed in rnd_seeds:
-        args.seed = rnd_seed
-        for powergrid in powergrids:
-            args.dataset_name = powergrid
-            for task in tasks:
-                args.datatype = task
-                for num_layers in [3, 2, 1]:
-                    args.num_layers = num_layers
-                    for hidden_dim in [32, 16]:
-                        args.hidden_dim = hidden_dim
-                        for model in models:
-                            args.model_name = model
-                            if ("gat" in model) or ("transformer" in model):
-                                att_heads = [1, 4]
-                            else:
-                                att_heads = [1]
-                            for heads in att_heads:
-                                args.heads = heads
+    for powergrid in powergrids:
+        args.dataset_name = powergrid
+        for task in tasks:
+            args.datatype = task
+            for num_layers in [3, 2, 1]:
+                args.num_layers = num_layers
+                for hidden_dim in [32, 16]:
+                    args.hidden_dim = hidden_dim
+                    for model in models:
+                        args.model_name = model
+                        if ("gat" in model) or ("transformer" in model):
+                            att_heads = [1, 4]
+                        else:
+                            att_heads = [1]
+                        for heads in att_heads:
+                            args.heads = heads
+                            for rnd_seed in rnd_seeds:
+                                args.seed = rnd_seed
 
                                 if os.path.exists(MODEL_DIR + f"{powergrid}/{powergrid}_{model}_{task}_{num_layers}l_{args.hidden_dim}hid_{args.heads}h_{rnd_seed}s_scores.json"):
                                     continue
