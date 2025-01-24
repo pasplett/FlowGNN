@@ -610,7 +610,7 @@ if __name__ == "__main__":
     rnd_seeds = [0, 100, 200, 300, 400]
     tasks = ['multiclass'] #['binary', 'multiclass', 'regression']
     powergrids = ['ieee24'] #['ieee24', 'uk', 'ieee39', 'ieee118']
-    models = ['gat', 'gatv2', 'transformer']
+    models = ['flowgat', 'flowgatv2', 'flowtransformer']
     for rnd_seed in rnd_seeds:
         args.seed = rnd_seed
         for powergrid in powergrids:
