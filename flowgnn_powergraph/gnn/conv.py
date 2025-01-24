@@ -31,7 +31,7 @@ if typing.TYPE_CHECKING:
 else:
     from torch.jit import _overload_method as overload
 
-from flowgnn_powergraph.message_passing import MessagePassing
+from gnn.message_passing import MessagePassing
 
 Any = object()
 
