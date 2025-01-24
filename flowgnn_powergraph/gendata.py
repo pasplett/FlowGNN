@@ -61,11 +61,11 @@ def get_dataloader(
         
         from functools import partial
 
-        lengths = [num_train, num_eval, num_test]
+        lengths = [num_train, num_eval]
         indices = torch.randperm(sum(lengths), generator=default_generator.manual_seed(seed)).tolist()
         train_indices = indices[:num_train]
-        dev_indices = indices[num_train : num_train + num_eval]
-        test_indices = indices[num_train + num_eval:]
+        dev_indices = indices[num_train:]
+        test_indices = torch.arange(num_train + num_eval, num_train + num_eval + num_test, dtype=torch.int64)
 
     train = Subset(dataset, train_indices)
     eval = Subset(dataset, dev_indices)

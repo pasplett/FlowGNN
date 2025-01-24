@@ -283,6 +283,7 @@ class GNN_basic(GNNBase):
 
 class GAT(GNN_basic):
     def __init__(self, input_dim, output_dim, model_params, graph_regression):
+        self.heads = model_params["heads"]
         super().__init__(
             input_dim,
             output_dim,
@@ -295,7 +296,7 @@ class GAT(GNN_basic):
         current_dim = self.input_dim
         for l in range(self.num_layers):
             self.convs.append(
-                GATConv(current_dim, self.hidden_dim, edge_dim=self.edge_dim)
+                GATConv(current_dim, self.hidden_dim, edge_dim=self.edge_dim, heads=self.heads, concat=False)
             )
             current_dim = self.hidden_dim
         # FC layers
@@ -309,6 +310,7 @@ class GAT(GNN_basic):
 
 class GATV2(GNN_basic):
     def __init__(self, input_dim, output_dim, model_params, graph_regression):
+        self.heads = model_params["heads"]
         super().__init__(
             input_dim,
             output_dim,
@@ -321,7 +323,7 @@ class GATV2(GNN_basic):
         current_dim = self.input_dim
         for l in range(self.num_layers):
             self.convs.append(
-                GATv2Conv(current_dim, self.hidden_dim, edge_dim=self.edge_dim)
+                GATv2Conv(current_dim, self.hidden_dim, edge_dim=self.edge_dim, heads=self.heads, concat=False)
             )
             current_dim = self.hidden_dim
         # FC layers
@@ -335,6 +337,7 @@ class GATV2(GNN_basic):
 
 class FLOWGAT(GNN_basic):
     def __init__(self, input_dim, output_dim, model_params, graph_regression):
+        self.heads = model_params["heads"]
         super().__init__(
             input_dim,
             output_dim,
@@ -347,7 +350,7 @@ class FLOWGAT(GNN_basic):
         current_dim = self.input_dim
         for l in range(self.num_layers):
             self.convs.append(
-                FlowGATConv(current_dim, self.hidden_dim, edge_dim=self.edge_dim)
+                FlowGATConv(current_dim, self.hidden_dim, edge_dim=self.edge_dim, heads=self.heads, concat=False)
             )
             current_dim = self.hidden_dim
         # FC layers
@@ -361,6 +364,7 @@ class FLOWGAT(GNN_basic):
 
 class FLOWGATV2(GNN_basic):
     def __init__(self, input_dim, output_dim, model_params, graph_regression):
+        self.heads = model_params["heads"]
         super().__init__(
             input_dim,
             output_dim,
@@ -373,7 +377,7 @@ class FLOWGATV2(GNN_basic):
         current_dim = self.input_dim
         for l in range(self.num_layers):
             self.convs.append(
-                FlowGATv2Conv(current_dim, self.hidden_dim, edge_dim=self.edge_dim)
+                FlowGATv2Conv(current_dim, self.hidden_dim, edge_dim=self.edge_dim, heads=self.heads, concat=False)
             )
             current_dim = self.hidden_dim
         # FC layers
@@ -478,6 +482,7 @@ class TRANSFORMER(GNN_basic): #uppercase
         model_params,
         graph_regression,
     ):
+        self.heads = model_params["heads"]
         super().__init__(
             input_dim,
             output_dim,
@@ -490,7 +495,7 @@ class TRANSFORMER(GNN_basic): #uppercase
         current_dim = self.input_dim
         for l in range(self.num_layers):
             self.convs.append(
-                   TransformerConv(current_dim, self.hidden_dim, heads=4, edge_dim=self.edge_dim, concat=False)
+                   TransformerConv(current_dim, self.hidden_dim, heads=self.heads, edge_dim=self.edge_dim, concat=False)
                    )
             current_dim = self.hidden_dim*1
 
@@ -508,6 +513,7 @@ class FLOWTRANSFORMER(GNN_basic): #uppercase
         model_params,
         graph_regression
     ):
+        self.heads = model_params["heads"]
         super().__init__(
             input_dim,
             output_dim,
@@ -520,7 +526,7 @@ class FLOWTRANSFORMER(GNN_basic): #uppercase
         current_dim = self.input_dim
         for l in range(self.num_layers):
             self.convs.append(
-                   FlowTransformerConv(current_dim, self.hidden_dim, heads=4, edge_dim=self.edge_dim, concat=False)
+                   FlowTransformerConv(current_dim, self.hidden_dim, heads=self.heads, edge_dim=self.edge_dim, concat=False)
                    )
             current_dim = self.hidden_dim*1
 

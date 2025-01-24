@@ -207,6 +207,7 @@ def arg_parse():
         default="False",
     )
     parser_model_params.add_argument("--hidden_dim", type=int, help="Hidden dimension")
+    parser_model_params.add_argument("--heads", type=int, help="Attention heads.")
 
     parser_model_params.add_argument(
         "--num_layers",
@@ -316,7 +317,7 @@ def arg_parse():
         hidden_dim=20,
         num_layers=3,
         dropout=0.1,
-        readout="max",
+        readout="sum",
         weight_decay=5e-5,
         model_name="transformer",
         edge_ent=1.0,
