@@ -103,15 +103,11 @@ class TrainModel(object):
         return loss, preds
 
     def test(self):
-        state_dict = torch.load(
-            os.path.join(self.save_dir, f"{self.save_name}_best.pth")
-        )["net"]
-        self.model.load_state_dict(state_dict)
         self.model = self.model.to(self.device)
         self.model.eval()
         
         times = []
-        for i in range(2):
+        for i in range(10):
             t0 = time.perf_counter()
             for batch in self.loader[0]["train"]:
                 batch = batch.to(self.device)
@@ -134,7 +130,7 @@ class TrainModel(object):
         self.model.train()
 
         times = []
-        for i in range(2):
+        for i in range(10):
             t0 = time.perf_counter()
             for batch in self.loader[0]["train"]:
                 batch = batch.to(self.device)
