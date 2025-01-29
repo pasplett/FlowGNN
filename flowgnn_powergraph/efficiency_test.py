@@ -3,7 +3,7 @@ File to train the GNN model.
 """
 
 import os
-from pathlib import Path
+import numpy as np
 import torch
 import warnings
 from torch.optim import Adam
@@ -109,14 +109,18 @@ class TrainModel(object):
         self.model.load_state_dict(state_dict)
         self.model = self.model.to(self.device)
         self.model.eval()
-        t0 = time.perf_counter()
-        for batch in self.loader[0]["train"]:
-            batch = batch.to(self.device)
-            _, __, ___ = self._eval_batch(batch, batch.y)
-        t1 = time.perf_counter()
+        
+        times = []
+        for i in range(2):
+            t0 = time.perf_counter()
+            for batch in self.loader[0]["train"]:
+                batch = batch.to(self.device)
+                _, __, ___ = self._eval_batch(batch, batch.y)
+            t1 = time.perf_counter()
+            times.append(t1 - t0)
 
         print(
-            f"Inference Time: {t1-t0}s"
+            f"Inference Time: {np.mean(times)} +- {np.std(times)} s"
         )
         return
 
@@ -128,14 +132,18 @@ class TrainModel(object):
             self.optimizer = Adam(self.model.parameters(), **optimizer_params)
         self.model.to(self.device)
         self.model.train()
-        t0 = time.perf_counter()
-        for batch in self.loader[0]["train"]:
-            batch = batch.to(self.device)
-            _ = self._train_batch(batch, batch.y)
-        t1 = time.perf_counter()
+
+        times = []
+        for i in range(2):
+            t0 = time.perf_counter()
+            for batch in self.loader[0]["train"]:
+                batch = batch.to(self.device)
+                _ = self._train_batch(batch, batch.y)
+            t1 = time.perf_counter()
+            times.append(t1 - t0)
         
         print(
-            f"Training Time: {t1-t0}s"
+            f"Training Time: {np.mean(times)} +- {np.std(times)} s"
         )
         return
 
