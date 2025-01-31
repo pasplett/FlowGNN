@@ -2,8 +2,8 @@
 FlowGNN
 =======
 
-   Official Python code for the paper "Flow Graph Neural Networks" submitted to ICLR 2024:
-   https://openreview.net/forum?id=iKI7wT6fCP
+   Official Python code for the paper "Flow-Attentional Graph Neural Networks" submitted to ICML 2025:
+   https://openreview.net/forum?id=w6pwKsdxKw
 
 This repository is divided into two distinct sections. 
 
