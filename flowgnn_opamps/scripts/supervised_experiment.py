@@ -18,7 +18,7 @@ from flowgnn_opamps.regression_models import (
     FlowTransformer,
     DVAE_Regression,
     PACE_Regression,
-    DAFlowGNN,
+    FlowDAGNN,
 )
 from flowgnn_opamps.dataset import CktDataset, CktDataset_igraph
 from flowgnn_opamps.utils import (
@@ -46,16 +46,16 @@ igraph_file = "./../data/ckt_bench_101.pkl" # Graph data
 target_file = "./../data/perform101.csv" # Target properties
 
 # Experimental setup
-num_runs = 1
+num_runs = 10
 start_run = 0
 seeds = [4, 42, 420, 4204, 42042, 420420, 4204204, 42042042, 420420420, 4204204204]
-model_names = ["flowgat", "flowgatv2", "flowtransformer", "daflowgnn-1", "daflowgnn-2"]
+model_names = ["flowgat", "flowgatv2", "flowtransformer", "flowdagnn"]
 properties = ["gain", "bw", "fom"]
 
 # Training hyperparameters
 batch_size = 64
 infer_batch_size = 128
-num_epochs = 1000
+num_epochs = 1
 learning_rate = 0.0001
 save_interval = 1000
 pred_hidden_channels = 64
@@ -166,16 +166,7 @@ model_parameters = {
         "pred_hidden_channels": pred_hidden_channels,
         "pred_dropout": pred_dropout
     },
-    "daflowgnn-1": {
-        "n_types": 10,
-        "n_feats": 1,
-        "hid_channels": 301,
-        "pred_hid_channels": pred_hidden_channels,
-        "pred_out_channels": 1,
-        "num_layers": 1,
-        "dropout": pred_dropout
-    },
-    "daflowgnn-2": {
+    "flowdagnn": {
         "n_types": 10,
         "n_feats": 1,
         "hid_channels": 301,
@@ -287,8 +278,8 @@ for i, model_name in enumerate(model_names):
                 model = PACE_Regression(**model_parameters[model_name])
                 data_mode = "igraph"
             
-            elif model_name.startswith("daflowgnn"):
-                model = DAFlowGNN(**model_parameters[model_name])
+            elif model_name.startswith("flowdagnn"):
+                model = FlowDAGNN(**model_parameters[model_name])
                 data_mode = "pygraph"
             
 
