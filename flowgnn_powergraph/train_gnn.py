@@ -499,7 +499,7 @@ def train_gnn(args, args_group):
             graph_classification=eval(args.graph_classification),
             graph_regression=eval(args.graph_regression),
             save_dir=os.path.join(args.model_save_dir, args.dataset_name),
-            save_name=f"{args.dataset_name}_{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}hid_{args.heads}h_{args.seed}s",
+            save_name=f"{args.dataset_name}_{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}hid_{args.seed}s",
             dataloader_params=dataloader_params,
         )
     else:
@@ -511,7 +511,7 @@ def train_gnn(args, args_group):
             graph_classification=eval(args.graph_classification),
             graph_regression=eval(args.graph_regression),
             save_dir=os.path.join(args.model_save_dir, args.dataset_name),
-            save_name=f"{args.dataset_name}_{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}hid_{args.heads}h_{args.seed}s",
+            save_name=f"{args.dataset_name}_{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}hid_{args.seed}s",
             dataloader_params=dataloader_params,
         ) 
 
@@ -526,80 +526,80 @@ def train_gnn(args, args_group):
     if eval(args.graph_regression):
         eval_loss, eval_acc, eval_balanced_acc, eval_f1_score  = trainer.eval_best()
         test_loss, test_r2score, preds, targets = trainer.test()
-        # predicted_values = preds.detach().cpu().numpy() if isinstance(preds, torch.Tensor) else np.array(
-        #     preds)
-        # target_values = targets.cpu().numpy() if isinstance(targets, torch.Tensor) else np.array(targets)
-        # data = {'Target Values': target_values, 'Predicted Values': predicted_values}
+        predicted_values = preds.detach().cpu().numpy() if isinstance(preds, torch.Tensor) else np.array(
+            preds)
+        target_values = targets.cpu().numpy() if isinstance(targets, torch.Tensor) else np.array(targets)
+        data = {'Target Values': target_values, 'Predicted Values': predicted_values}
 
-        # # Create a DataFrame for metrics
-        # metrics = {'Metric': ['MSE loss', 'R2 score'],
-        #            'Value': [test_loss, test_r2score]}
+        # Create a DataFrame for metrics
+        metrics = {'Metric': ['MSE loss', 'R2 score'],
+                   'Value': [test_loss, test_r2score]}
 
-        # # Combine data and metrics DataFrames
-        # df_data = pd.DataFrame(data)
-        # df_metrics = pd.DataFrame(metrics)
+        # Combine data and metrics DataFrames
+        df_data = pd.DataFrame(data)
+        df_metrics = pd.DataFrame(metrics)
 
-        # # Combine data and metrics DataFrames
-        # save_dir = os.path.join(args.model_save_dir, args.dataset_name)
-        # save_name = f"summary{args.dataset_name}_{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}hid_{args.heads}h_{args.seed}s"
+        # Combine data and metrics DataFrames
+        save_dir = os.path.join(args.model_save_dir, args.dataset_name)
+        save_name = f"summary{args.dataset_name}_{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}hid_{args.seed}s"
 
-        # # Create an Excel writer with the specified directory and file name
-        # output_path = os.path.join(save_dir, f"{save_name}.xlsx")
+        # Create an Excel writer with the specified directory and file name
+        output_path = os.path.join(save_dir, f"{save_name}.xlsx")
 
-        # with pd.ExcelWriter(output_path, engine='xlsxwriter') as writer:
-        #     # Write data to the sheet named 'Data'
-        #     df_data.to_excel(writer, sheet_name='Data', index=False)
+        with pd.ExcelWriter(output_path, engine='xlsxwriter') as writer:
+            # Write data to the sheet named 'Data'
+            df_data.to_excel(writer, sheet_name='Data', index=False)
 
-        #     # Write metrics to the sheet named 'Metrics'
-        #     df_metrics.to_excel(writer, sheet_name='Metrics', index=False)
+            # Write metrics to the sheet named 'Metrics'
+            df_metrics.to_excel(writer, sheet_name='Metrics', index=False)
     else:
         eval_loss, eval_acc, eval_balanced_acc, eval_f1_score = trainer.eval_best()
         _, test_acc, test_balanced_acc, preds, targets = trainer.test()
 
-        # probs = torch.nn.functional.softmax(preds, dim=1)
+        probs = torch.nn.functional.softmax(preds, dim=1)
 
-        # # Get predicted class for each sample
-        # _, predicted_classes = torch.max(probs, 1)
+        # Get predicted class for each sample
+        _, predicted_classes = torch.max(probs, 1)
 
-        # predicted_probs = probs.detach().cpu().numpy() if isinstance(preds, torch.Tensor) else np.array(
-        #     probs)
-        # predicted_values = predicted_classes.detach().cpu().numpy() if isinstance(preds, torch.Tensor) else np.array(
-        #     predicted_classes)
-        # target_values = targets.cpu().numpy() if isinstance(targets, torch.Tensor) else np.array(targets)
-        # f1 = f1_score(target_values, predicted_values, average='weighted')
-        # if args.datatype == 'binary':
-        #     roc_auc = roc_auc_score(target_values, predicted_values, average='weighted')
-        # else:
-        #     if not len(np.unique(target_values)) == predicted_probs.shape[1]:
-        #         predicted_probs = predicted_probs[:, np.unique(target_values)]
-        #         predicted_probs = softmax(predicted_probs, axis=1)
-        #     roc_auc = roc_auc_score(target_values, predicted_probs, multi_class='ovr', average='weighted')
-        # precision = precision_score(target_values, predicted_values, average='weighted', zero_division=0.0)
-        # recall = recall_score(target_values, predicted_values, average='weighted', zero_division=0.0)
-        # # Create a DataFrame for data
-        # data = {'Target Values': target_values, 'Predicted Values': predicted_values}
+        predicted_probs = probs.detach().cpu().numpy() if isinstance(preds, torch.Tensor) else np.array(
+            probs)
+        predicted_values = predicted_classes.detach().cpu().numpy() if isinstance(preds, torch.Tensor) else np.array(
+            predicted_classes)
+        target_values = targets.cpu().numpy() if isinstance(targets, torch.Tensor) else np.array(targets)
+        f1 = f1_score(target_values, predicted_values, average='weighted')
+        if args.datatype == 'binary':
+            roc_auc = roc_auc_score(target_values, predicted_values, average='weighted')
+        else:
+            if not len(np.unique(target_values)) == predicted_probs.shape[1]:
+                predicted_probs = predicted_probs[:, np.unique(target_values)]
+                predicted_probs = softmax(predicted_probs, axis=1)
+            roc_auc = roc_auc_score(target_values, predicted_probs, multi_class='ovr', average='weighted')
+        precision = precision_score(target_values, predicted_values, average='weighted', zero_division=0.0)
+        recall = recall_score(target_values, predicted_values, average='weighted', zero_division=0.0)
+        # Create a DataFrame for data
+        data = {'Target Values': target_values, 'Predicted Values': predicted_values}
 
-        # # Create a DataFrame for metrics
-        # metrics = {'Metric': ['ACC', 'BAL ACC', 'F1-score', 'ROC AUC', 'Precision', 'Recall'],
-        #            'Value': [test_acc, test_balanced_acc, f1, roc_auc, precision, recall]}
+        # Create a DataFrame for metrics
+        metrics = {'Metric': ['ACC', 'BAL ACC', 'F1-score', 'ROC AUC', 'Precision', 'Recall'],
+                   'Value': [test_acc, test_balanced_acc, f1, roc_auc, precision, recall]}
 
-        # # Combine data and metrics DataFrames
-        # df_data = pd.DataFrame(data)
-        # df_metrics = pd.DataFrame(metrics)
+        # Combine data and metrics DataFrames
+        df_data = pd.DataFrame(data)
+        df_metrics = pd.DataFrame(metrics)
 
-        # # Combine data and metrics DataFrames
-        # save_dir = os.path.join(args.model_save_dir, args.dataset_name)
-        # save_name = f"summary{args.dataset_name}_{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}hid_{args.heads}h_{args.seed}s"
+        # Combine data and metrics DataFrames
+        save_dir = os.path.join(args.model_save_dir, args.dataset_name)
+        save_name = f"summary{args.dataset_name}_{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}hid_{args.seed}s"
 
-        # # Create an Excel writer with the specified directory and file name
-        # output_path = os.path.join(save_dir, f"{save_name}.xlsx")
+        # Create an Excel writer with the specified directory and file name
+        output_path = os.path.join(save_dir, f"{save_name}.xlsx")
 
-        # with pd.ExcelWriter(output_path, engine='xlsxwriter') as writer:
-        #     # Write data to the sheet named 'Data'
-        #     df_data.to_excel(writer, sheet_name='Data', index=False)
+        with pd.ExcelWriter(output_path, engine='xlsxwriter') as writer:
+            # Write data to the sheet named 'Data'
+            df_data.to_excel(writer, sheet_name='Data', index=False)
 
-        #     # Write metrics to the sheet named 'Metrics'
-        #     df_metrics.to_excel(writer, sheet_name='Metrics', index=False)
+            # Write metrics to the sheet named 'Metrics'
+            df_metrics.to_excel(writer, sheet_name='Metrics', index=False)
 
 
 if __name__ == "__main__":
@@ -608,9 +608,9 @@ if __name__ == "__main__":
 
     # for loop the training architecture for the number of layers and hidden dimensions
     rnd_seeds = [0, 100, 200, 300, 400]
-    tasks = ['multiclass'] #['binary', 'multiclass', 'regression']
+    tasks = ['multiclass'] 
     powergrids = ['ieee24'] #['ieee24', 'uk', 'ieee39', 'ieee118']
-    models = ['gat', 'gatv2', 'transformer']
+    models = ['gat', 'gatv2', 'transformer', 'flowgat', 'flowgatv2', 'transformer']
     
     for powergrid in powergrids:
         args.dataset_name = powergrid
@@ -622,22 +622,16 @@ if __name__ == "__main__":
                     args.hidden_dim = hidden_dim
                     for model in models:
                         args.model_name = model
-                        if ("gat" in model) or ("transformer" in model):
-                            att_heads = [1, 4]
-                        else:
-                            att_heads = [1]
-                        for heads in att_heads:
-                            args.heads = heads
-                            for rnd_seed in rnd_seeds:
-                                args.seed = rnd_seed
+                        for rnd_seed in rnd_seeds:
+                            args.seed = rnd_seed
 
-                                if os.path.exists(MODEL_DIR + f"{powergrid}/{powergrid}_{model}_{task}_{num_layers}l_{args.hidden_dim}hid_{args.heads}h_{rnd_seed}s_scores.json"):
-                                    continue
+                            if os.path.exists(MODEL_DIR + f"{powergrid}/{powergrid}_{model}_{task}_{num_layers}l_{args.hidden_dim}hid_{rnd_seed}s_scores.json"):
+                                continue
 
-                                fix_random_seed(rnd_seed)
-                                args_group = create_args_group(parser, args)
-                                print(f"Hidden_dim: {args.hidden_dim}, Num_layers: {args.num_layers}, Heads: {args.heads}, model {args.model_name}, data {args.dataset_name}, task {args.datatype}, rnd_seed {rnd_seed} ")
-                                train_gnn(args, args_group)
+                            fix_random_seed(rnd_seed)
+                            args_group = create_args_group(parser, args)
+                            print(f"Hidden_dim: {args.hidden_dim}, Num_layers: {args.num_layers}, model {args.model_name}, data {args.dataset_name}, task {args.datatype}, rnd_seed {rnd_seed} ")
+                            train_gnn(args, args_group)
 
         print("CHANGE POWERGRID")
 

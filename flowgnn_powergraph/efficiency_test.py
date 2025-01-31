@@ -242,22 +242,16 @@ if __name__ == "__main__":
                     args.hidden_dim = hidden_dim
                     for model in models:
                         args.model_name = model
-                        if ("gat" in model) or ("transformer" in model):
-                            att_heads = [1, 4]
-                        else:
-                            att_heads = [1]
-                        for heads in att_heads:
-                            args.heads = heads
-                            for rnd_seed in rnd_seeds:
-                                args.seed = rnd_seed
+                        for rnd_seed in rnd_seeds:
+                            args.seed = rnd_seed
 
-                                if os.path.exists(MODEL_DIR + f"{powergrid}/{powergrid}_{model}_{task}_{num_layers}l_{args.hidden_dim}hid_{args.heads}h_{rnd_seed}s_scores.json"):
-                                    continue
+                            if os.path.exists(MODEL_DIR + f"{powergrid}/{powergrid}_{model}_{task}_{num_layers}l_{args.hidden_dim}hid_{rnd_seed}s_scores.json"):
+                                continue
 
-                                fix_random_seed(rnd_seed)
-                                args_group = create_args_group(parser, args)
-                                print(f"Hidden_dim: {args.hidden_dim}, Num_layers: {args.num_layers}, Heads: {args.heads}, model {args.model_name}, data {args.dataset_name}, task {args.datatype}, rnd_seed {rnd_seed} ")
-                                train_gnn(args, args_group)
+                            fix_random_seed(rnd_seed)
+                            args_group = create_args_group(parser, args)
+                            print(f"Hidden_dim: {args.hidden_dim}, Num_layers: {args.num_layers}, model {args.model_name}, data {args.dataset_name}, task {args.datatype}, rnd_seed {rnd_seed} ")
+                            train_gnn(args, args_group)
 
         print("CHANGE POWERGRID")
 

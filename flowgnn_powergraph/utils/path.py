@@ -2,7 +2,7 @@
 #
 import os
 
-CKPT_ROOT = "../"
+CKPT_ROOT = "./"
 DATA_DIR = CKPT_ROOT + "dataset_cascades/"
 MODEL_DIR = CKPT_ROOT + "experiment/"
 LOG_DIR = CKPT_ROOT + "logs/"
