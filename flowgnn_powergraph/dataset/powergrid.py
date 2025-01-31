@@ -9,6 +9,7 @@ General file to load the Inmemory datasets (UK, IEEE24, IEEE39)
 import os.path as osp
 import torch
 import mat73
+import random
 from sklearn.model_selection import train_test_split
 import os
 from torch_geometric.data import InMemoryDataset, Data, download_url, extract_zip
@@ -45,7 +46,7 @@ class PowerGrid(InMemoryDataset):
         assert self.name in self.names.keys()
         super(PowerGrid, self).__init__(root, transform, pre_transform, pre_filter)
         print(self.processed_paths[0])
-        self.data, self.slices = torch.load(self.processed_paths[0]) 
+        self.data, self.slices = torch.load(self.processed_paths[0], map_location=torch.device("cpu")) 
 
     @property
     def raw_dir(self):
@@ -180,6 +181,9 @@ class PowerGrid(InMemoryDataset):
 
             #if self.pre_transform is not None:
             #    data = self.pre_transform(data)
+
+        random.seed(42)
+        random.shuffle(data_list)
 
         #data_list = padded_datalist(data_list, adj_list, max_num_nodes)
         torch.save(self.collate(data_list), self.processed_paths[0])
