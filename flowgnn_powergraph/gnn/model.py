@@ -8,7 +8,7 @@ GNN models, How it is structured and types of GNN models: Transformer, GAT, GCN,
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, GATConv, GATv2Conv, NNConv, GINEConv, TransformerConv
+from torch_geometric.nn import GCNConv, GINConv, GATConv, GATv2Conv, NNConv, GINEConv, TransformerConv, SAGEConv
 from torch_geometric.data.batch import Batch
 from torch_geometric.nn.pool import global_mean_pool, global_add_pool, global_max_pool
 
@@ -20,7 +20,9 @@ def get_gnnNets(input_dim, output_dim, model_params, graph_regression):
     if model_params["model_name"].lower() in [
         "base",
         "gcn",
+        "graphsage",
         "gin",
+        "gine",
         "gat",
         "flowgat",
         "gatv2",
@@ -421,9 +423,92 @@ class GCN(GNN_basic):
             x = F.relu(x)
             x = F.dropout(x, self.dropout, training=self.training)
         return x
+    
+
+class GRAPHSAGE(GNN_basic):
+    def __init__(
+        self,
+        input_dim,
+        output_dim,
+        model_params,
+        graph_regression,
+    ):
+        super().__init__(
+            input_dim,
+            output_dim,
+            model_params,
+            graph_regression,
+        )
+
+    def get_layers(self):
+        self.convs = nn.ModuleList()
+        current_dim = self.input_dim
+        for l in range(self.num_layers):
+            self.convs.append(SAGEConv(current_dim, self.hidden_dim))
+            current_dim = self.hidden_dim
+        # FC layers
+        mlp_dim = current_dim*2 if self.readout=='cat_max_sum' else current_dim
+        self.mlps = nn.Linear(mlp_dim, self.output_dim)
+        return
+    
+    def get_emb(self, *args, **kwargs):
+        x, edge_index, _, _, _ = self._argsparse(*args, **kwargs)
+
+        for layer in self.convs:
+            x = layer(x, edge_index)
+            x = F.relu(x)
+            x = F.dropout(x, self.dropout, training=self.training)
+        return x
 
 
 class GIN(GNN_basic):
+    def __init__(
+        self,
+        input_dim,
+        output_dim,
+        model_params,
+        graph_regression,
+    ):
+        super().__init__(
+            input_dim,
+            output_dim,
+            model_params,
+            graph_regression,
+        )
+
+    def get_layers(self):
+        self.convs = nn.ModuleList()
+        current_dim = self.input_dim
+        for l in range(self.num_layers):
+            self.convs.append(
+                GINConv(
+                    nn=nn.Sequential(
+                        nn.Linear(current_dim, self.hidden_dim),
+                        nn.ReLU(),
+                        nn.Linear(self.hidden_dim, self.hidden_dim),
+                    )
+                )
+            )
+            current_dim = self.hidden_dim
+        # FC layers
+        mlp_dim = current_dim*2 if self.readout=='cat_max_sum' else current_dim
+        self.mlps = nn.Sequential(
+            nn.Linear(mlp_dim, mlp_dim),
+            nn.LeakyReLU(),
+            nn.Linear(mlp_dim, self.output_dim))
+        return
+    
+    def get_emb(self, *args, **kwargs):
+        x, edge_index, _, _, _ = self._argsparse(*args, **kwargs)
+
+        for layer in self.convs:
+            x = layer(x, edge_index)
+            x = F.relu(x)
+            x = F.dropout(x, self.dropout, training=self.training)
+        return x
+    
+
+class GINE(GNN_basic):
     def __init__(
         self,
         input_dim,
