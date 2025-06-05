@@ -204,6 +204,12 @@ class FlowTransformer(BaseRegression):
 
 
 class DVAE_Regression(DVAE):
+    """Regression model based on D-VAE [1].
+    
+    [1] Zhang, Muhan, et al. "D-vae: A variational autoencoder for directed 
+    acyclic graphs." Advances in neural information processing systems 32 
+    (2019).
+    """
     def __init__(
             self,
             max_n, 
@@ -266,6 +272,12 @@ class DVAE_Regression(DVAE):
     
 
 class PACE_Regression(PACE_VAE):
+    """Regression model based on PACE [1].
+    
+    [1] Dong, Zehao, et al. "Pace: A parallelizable computation encoder for 
+    directed acyclic graphs." International conference on machine learning. 
+    PMLR, 2022.
+    """
     def __init__(
             self,
             max_n, 
@@ -328,6 +340,12 @@ class PACE_Regression(PACE_VAE):
     
     
 class DAG_Transformer(GraphTransformer):
+    """Regression model based on the DAG Transformer [1].
+    
+    [1] Luo, Yuankai, Veronika Thost, and Lei Shi. "Transformers over directed 
+    acyclic graphs." Advances in Neural Information Processing Systems 36 
+    (2023): 47764-47782."""
+
     def __init__(
         self,
         in_size, 

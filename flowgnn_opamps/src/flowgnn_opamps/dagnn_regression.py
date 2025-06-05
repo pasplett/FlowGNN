@@ -7,6 +7,11 @@ from flowgnn_opamps.original_code.dagnn_pyg import DAGNN as OriginalDAGNN
 from flowgnn_opamps.original_code.batch import Batch
 
 class DAGNN(nn.Module):
+    """Regression model based on DAGNN [1].
+    
+    Thost, Veronika, and Jie Chen. "Directed acyclic graph neural networks." 
+    International Conference on Learning Representations (2021).
+    """
     def __init__(
             self,
             emb_dim,
