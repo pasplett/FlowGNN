@@ -37,9 +37,9 @@ Any = object()
 
 
 class FlowGATConv(MessagePassing):
-    r"""The flow graph attentional operator from the `"Flow Graph Neural Networks"
-    <https://openreview.net/forum?id=iKI7wT6fCP>`_ paper. The code is based on
-    the torch_geometric.nn.GATConv operator from the `"Graph Attention Networks"
+    r"""The flow graph attentional operator from the `"Flow-Attentional Graph 
+    Neural Networks" paper. The code is based on the torch_geometric.nn.GATConv 
+    operator from the `"Graph Attention Networks" 
     <https://arxiv.org/abs/1710.10903`_ paper.
 
     In contrast to GATConv, FlowGATConv normalizes attention coefficiencts across
@@ -403,10 +403,9 @@ class FlowGATConv(MessagePassing):
     
 
 class FlowGATv2Conv(MessagePassing):
-    r"""The FlowGATv2 operator from the `"Flow Graph Neural Networks"
-    <https://openreview.net/forum?id=iKI7wT6fCP>`_ paper.
-    This operator is based on the torch_geometric.nn.GATv2Conv operator from the
-    `"How Attentive are Graph Attention Networks?"
+    r"""The FlowGATv2 operator from the `"Flow-Attentional Graph Neural 
+    Networks" paper. This operator is based on the torch_geometric.nn.GATv2Conv 
+    operator from the `"How Attentive are Graph Attention Networks?"
     <https://arxiv.org/abs/2105.14491>`_ paper, which 
     fixes the static attention problem of the standard
     :class:`~torch_geometric.conv.GATConv` layer.
@@ -762,8 +761,8 @@ class FlowGATv2Conv(MessagePassing):
 
 
 class FlowTransformerConv(MessagePassing):
-    r"""The flow graph transformer operator from the `"Flow Graph Neural Networks"
-    <https://openreview.net/forum?id=iKI7wT6fCP>`_ paper. It is based on the 
+    r"""The flow graph transformer operator from the `"Flow-Attentional Graph 
+    Neural Networks" paper. It is based on the 
     torch_geometric.nn.TransformerConv operator from the `"Masked Label 
     Prediction: Unified Message Passing Model for Semi-Supervised Classification"
     <https://arxiv.org/abs/2009.03509>`_ paper.

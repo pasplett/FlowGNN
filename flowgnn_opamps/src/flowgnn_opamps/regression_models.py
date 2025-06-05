@@ -22,6 +22,9 @@ from flowgnn_opamps.original_code.utils_dag_transformer import add_order_info
 from flowgnn_opamps.conv import FlowGATConv, FlowGATv2Conv, FlowTransformerConv
 
 class BaseRegression(nn.Module):
+    """Base class for regression models on graphs. Used for predicting 
+    properties of operational amplifiers based on their circuit graphs.
+    """
     def __init__(
             self, 
             in_channels, 
@@ -459,7 +462,11 @@ class AttentionAggregation(nn.Module):
         att_weights = A * self.softmax(att_weights) # (num_nodes, num_nodes) 
         return att_weights
 
+
 class FlowDAGNN(nn.Module):
+    """A flow-attentional directed acyclic graph neural network as described
+    in the paper `"Flow-Attentional Graph Neural Networks".
+    """
 
     def __init__(
             self, 
