@@ -17,6 +17,8 @@ from torch_geometric.nn.models import MLP
 from flowgnn_opamps.original_code.constants import *
 from flowgnn_opamps.original_code.models_ig import DVAE
 from flowgnn_opamps.original_code.pace import PACE_VAE
+from flowgnn_opamps.original_code.dag_transformer import GraphTransformer
+from flowgnn_opamps.original_code.utils_dag_transformer import add_order_info
 from flowgnn_opamps.conv import FlowGATConv, FlowGATv2Conv, FlowTransformerConv
 
 class BaseRegression(nn.Module):
@@ -320,6 +322,88 @@ class PACE_Regression(PACE_VAE):
         memory = self.encoder(src_inp,mask=tgt_mask)
         memory = memory.transpose(0,1).reshape(-1,self.max_n*self.nhid) # shape ( bsize, self.max_n-1, nhid): each batch, the first num_node - 1 rows are the representation of input nodes.
         return memory
+    
+    
+class DAG_Transformer(GraphTransformer):
+    def __init__(
+        self,
+        in_size, 
+        d_model=256, 
+        num_heads=8,
+        dim_feedforward=512, 
+        dropout=0.0, 
+        num_layers=4,
+        batch_norm=False,
+        gnn_type="gcn", 
+        use_edge_attr=False, 
+        num_edge_features=4,
+        in_embed=True, 
+        edge_embed=True, 
+        use_global_pool=True,
+        global_pool='mean', 
+        SAT=False,
+        pred_hidden_channels=64,
+        pred_dropout=0.5,
+        seed=None
+    ):
+        if seed:
+            torch.manual_seed(seed)
+
+        super(DAG_Transformer, self).__init__(
+            in_size, 1, d_model, num_heads=num_heads, 
+            dim_feedforward=dim_feedforward, dropout=dropout, 
+            num_layers=num_layers, batch_norm=batch_norm, gnn_type=gnn_type, 
+            use_edge_attr=use_edge_attr, num_edge_features=num_edge_features,
+            in_embed=in_embed, edge_embed=edge_embed, 
+            use_global_pool=use_global_pool, max_seq_len=None,
+            global_pool=global_pool, SAT=SAT
+        )
+        
+        self.fc_pred = nn.Sequential(
+            nn.Linear(d_model, pred_hidden_channels),
+            nn.ReLU(),
+            nn.Linear(pred_hidden_channels, 1)
+        )
+                
+        self.pred_hidden_channels = pred_hidden_channels
+        self.pred_dropout = pred_dropout
+    
+    def get_device(self):
+        return next(self.parameters()).device
+    
+    def predict(self, g):
+        output = self.encode(g)
+        output = F.dropout(output, p=self.pred_dropout, training=self.training)
+        return self.fc_pred(output)
+    
+    def encode(self, data, return_attn=False):
+        data = add_order_info(data)
+        x, edge_index, edge_attr, batch = data.x, data.edge_index, data.edge_attr, data.batch
+        node_depth = data.node_depth if hasattr(data, "node_depth") else None
+        mask_dag_ = data.mask_rc if hasattr(data, 'mask_rc') else None
+        dag_rr_edge_index = data.dag_rr_edge_index if hasattr(data, 'dag_rr_edge_index') else None
+        output = self.embedding(x) if node_depth is None else self.embedding(x, node_depth.view(-1,))
+        output = self.dropout(output)
+
+        if self.use_edge_attr and edge_attr is not None:
+            edge_attr = self.embedding_edge(edge_attr)
+        else:
+            edge_attr = None
+
+        output = self.encoder(
+            output, 
+            self.SAT,
+            edge_index,
+            mask_dag_,
+            dag_rr_edge_index,
+            edge_attr=edge_attr,
+            ptr=data.ptr,
+            return_attn=return_attn
+        )
+        # readout step
+        if self.use_global_pool:
+            output = self.pooling(output, data.batch)
+        return output
 
 
 class FlowPredictor(nn.Module):

@@ -18,9 +18,10 @@ from flowgnn_opamps.regression_models import (
     FlowTransformer,
     DVAE_Regression,
     PACE_Regression,
+    DAG_Transformer,
     FlowDAGNN,
 )
-from flowgnn_opamps.dataset import CktDataset, CktDataset_igraph
+from flowgnn_opamps.dataset import CktDataset, CktDataset_DAGFormer, CktDataset_igraph
 from flowgnn_opamps.utils import (
     train_pygraph_supervised,
     train_igraph_supervised,
@@ -63,6 +64,8 @@ pred_dropout = 0.5
 patience = 20
 loss_function = torch.nn.MSELoss()
 lr_scheduler = False
+#DAGFormer
+use_mpnn = False
 
 model_parameters = {
     "gcn": {
@@ -187,6 +190,23 @@ model_parameters = {
         "dropout": 0.25, 
         "fc_hidden": 256, 
         "nz": 66
+    },
+    "dag_transformer": {
+        "in_size": 11, 
+        "d_model": 256, 
+        "num_heads": 8,
+        "dim_feedforward": 512, 
+        "dropout": 0.2, 
+        "num_layers": 4,
+        "batch_norm": True,
+        "gnn_type": "gcn", 
+        "use_edge_attr": True, 
+        "num_edge_features": 4,
+        "in_embed": False, 
+        "edge_embed": False, 
+        "use_global_pool": True,
+        "global_pool": 'mean', 
+        "SAT": True,
     }
 }
 
@@ -277,6 +297,10 @@ for i, model_name in enumerate(model_names):
             elif model_name.startswith("pace"):
                 model = PACE_Regression(**model_parameters[model_name])
                 data_mode = "igraph"
+
+            elif model_name.startswith("dag_transformer"):
+                model = DAG_Transformer(**model_parameters[model_name])
+                data_mode = "pygraph_dagformer"
             
             elif model_name.startswith("flowdagnn"):
                 model = FlowDAGNN(**model_parameters[model_name])
@@ -299,6 +323,24 @@ for i, model_name in enumerate(model_names):
                 train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size, drop_last=False, pin_memory=True)
                 val_loader = DataLoader(val_dataset, shuffle=False, batch_size=batch_size, drop_last=False, pin_memory=True)
                 test_loader = DataLoader(test_dataset, shuffle=False, batch_size=batch_size, drop_last=False, pin_memory=True)
+
+
+            elif data_mode == "pygraph_dagformer":
+                train_dataset = CktDataset_DAGFormer(pygraph_file, target_file, target=target, train=True, val=False, device=device, use_mpnn=use_mpnn)
+                mean_target, std_target = torch.mean(train_dataset.targets), torch.std(train_dataset.targets)
+                train_dataset.targets = (train_dataset.targets - mean_target) / std_target
+                
+                val_dataset = CktDataset_DAGFormer(pygraph_file, target_file, target=target, train=True, val=True, device=device, use_mpnn=use_mpnn)
+                val_dataset.targets = (val_dataset.targets - mean_target) / std_target
+                
+                test_dataset = CktDataset_DAGFormer(pygraph_file, target_file, target=target, train=False, device=device, use_mpnn=use_mpnn)
+                test_dataset.targets = (test_dataset.targets - mean_target) / std_target
+
+                # Define loaders
+                train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size, drop_last=False, pin_memory=True)
+                val_loader = DataLoader(val_dataset, shuffle=False, batch_size=batch_size, drop_last=False, pin_memory=True)
+                test_loader = DataLoader(test_dataset, shuffle=False, batch_size=batch_size, drop_last=False, pin_memory=True)
+
 
             elif data_mode == "igraph":
                 train_dataset = CktDataset_igraph(igraph_file, target_file, target=target, train=True, val=False, device=device,
@@ -328,7 +370,7 @@ for i, model_name in enumerate(model_names):
             for epoch in range(1, num_epochs + 1):
 
                 
-                if data_mode == "pygraph":
+                if data_mode == "pygraph" or data_mode == "pygraph_dagformer":
 
                     t0 = time.perf_counter()
                     train_pygraph_supervised(model, train_loader, loss_function, optimizer)
