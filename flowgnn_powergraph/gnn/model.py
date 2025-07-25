@@ -40,7 +40,7 @@ def get_gnnNets(input_dim, output_dim, model_params, graph_regression):
         )
     else:
         raise ValueError(
-            f"GNN name should be gcn, gat, gin or transformer " f"and {model_params["model_name"]} is not defined."
+            f"GNN name should be gcn, gat, gin or transformer " f"and {model_params['model_name']} is not defined."
         )
 
 
@@ -112,7 +112,7 @@ class GNNBase(nn.Module):
                     edge_weight = torch.ones(edge_index.shape[1], dtype=torch.float32, device=x.device)
 
                 if self.pe_transform:
-                    pe = self.pe_transform(data).pe
+                    pe = self.pe_transform(data).pe.to(x.device)
 
             elif len(args) == 2:
                 x, edge_index = args[0], args[1]
