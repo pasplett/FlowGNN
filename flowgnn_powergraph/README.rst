@@ -12,10 +12,12 @@ https://github.com/PowerGraph-Datasets/PowerGraph-Graph
 
 Compared to the original code, we added the following models to gnn.model:
 
+- GraphSAGE
 - GATv2
 - FlowGAT
 - FlowGATv2
 - FlowTransformer
+- GraphGPS
 
 ==============
 Installation
