@@ -18,6 +18,8 @@ Compared to the original code, we added the following models to gnn.model:
 - FlowGATv2
 - FlowTransformer
 - GraphGPS
+- SAT
+- Exphormer
 
 ==============
 Installation
