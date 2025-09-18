@@ -3,20 +3,21 @@ GNN models, How it is structured and types of GNN models: Transformer, GAT, GCN,
 
 """
 
-
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GINConv, GATConv, GATv2Conv, NNConv, GINEConv, TransformerConv, SAGEConv, GPSConv, ResGatedGraphConv
 from torch_geometric.data.batch import Batch
 from torch_geometric.nn.pool import global_mean_pool, global_add_pool, global_max_pool
-import torch_geometric.transforms as T
 from torch_geometric.nn.attention import PerformerAttention
 from typing import Optional
 
 from gnn.conv import FlowGATConv, FlowGATv2Conv, FlowTransformerConv
+from gnn.sat.models import GraphTransformer as StructureAwareTransformer
+from gnn.exphormer.model import ExphormerModel
 from utils.parser_utils import fix_random_seed
+
+from torch_geometric.data import Data
 
 
 def get_gnnNets(input_dim, output_dim, model_params, graph_regression):
@@ -32,7 +33,9 @@ def get_gnnNets(input_dim, output_dim, model_params, graph_regression):
         "flowgatv2",
         "transformer",
         "flowtransformer",
-        "graphgps"
+        "graphgps",
+        "sat",
+        "exphormer"
     ]:
         GNNmodel = model_params["model_name"].upper()
         return eval(GNNmodel)(
@@ -110,9 +113,6 @@ class GNNBase(nn.Module):
                     edge_weight = data.edge_weight
                 else:
                     edge_weight = torch.ones(edge_index.shape[1], dtype=torch.float32, device=x.device)
-
-                if self.pe_transform:
-                    pe = self.pe_transform(data).pe.to(x.device)
 
             elif len(args) == 2:
                 x, edge_index = args[0], args[1]
@@ -208,10 +208,7 @@ class GNNBase(nn.Module):
                         edge_weight = torch.ones(edge_index.shape[1], dtype=torch.float32, device=x.device)
                 else:
                     edge_weight = torch.ones(edge_index.shape[1], dtype=torch.float32, device=x.device)
-        if self.pe_transform:
-            return x, edge_index, edge_attr, edge_weight, batch, pe
-        else:
-            return x, edge_index, edge_attr, edge_weight, batch
+        return x, edge_index, edge_attr, edge_weight, batch
 
 
 # Basic structure of GNNs
@@ -814,8 +811,7 @@ class GRAPHGPS(GNN_basic):
         input_dim,
         output_dim,
         model_params,
-        graph_regression,
-        pe_type="lappe"
+        graph_regression
     ):
         super().__init__(
             input_dim,
@@ -825,21 +821,9 @@ class GRAPHGPS(GNN_basic):
         )
 
         self.pe_dim = self.hidden_dim // 8
-        self.node_emb = nn.Linear(input_dim, self.hidden_dim - self.pe_dim)
+        self.node_emb = nn.Linear(input_dim - 20, self.hidden_dim - self.pe_dim)
         self.pe_lin = nn.Linear(20, self.pe_dim)
         self.pe_norm = nn.BatchNorm1d(20)
-        self.pe_type = pe_type
-
-        if self.pe_type == "rw":
-            self.pe_transform = T.AddRandomWalkPE(
-                walk_length=20, attr_name='pe'
-            )
-        elif self.pe_type == "lappe":
-            self.pe_transform = T.AddLaplacianEigenvectorPE(
-                k=20, attr_name='pe'
-            )
-        else:
-            raise KeyError(f"Unknown pe_type {pe_type}")
 
     def get_layers(self):
         self.convs = nn.ModuleList()
@@ -867,21 +851,22 @@ class GRAPHGPS(GNN_basic):
         )
         return
     
-    def get_emb(self, *args, **kwargs):
-        x, edge_index, edge_attr, edge_weight, batch, pe = self._argsparse(*args, **kwargs)
-        x_pe = self.pe_norm(pe)
-        x = torch.cat((self.node_emb(x.squeeze(-1)), self.pe_lin(x_pe)), 1)
+    def get_emb(self, data, **kwargs):
+        x, edge_index, edge_attr, edge_weight, batch = self._argsparse(data, **kwargs)
+        x_node = self.node_emb(x[:, :3].squeeze(-1))
+        x_pe = self.pe_lin(self.pe_norm(x[:, -20:]))
+        x = torch.cat((x_node, x_pe), 1)
 
         for layer in self.convs:
-            x = layer(x, edge_index, batch, edge_attr=edge_attr)
+            x = layer(x, edge_index, batch, edge_attr=edge_attr*edge_weight[:, None])
             x = F.dropout(x, self.dropout, training=self.training)
 
         return x
     
-    def forward(self, *args, **kwargs):
-        _, _, _, _, batch, _ = self._argsparse(*args, **kwargs)
+    def forward(self, data, **kwargs):
+        _, _, _, _, batch = self._argsparse(data, **kwargs)
         # node embedding for GNN
-        emb = self.get_emb(*args, **kwargs)
+        emb = self.get_emb(data, **kwargs)
         x = self.readout_layer(emb, batch)
         self.logits = self.mlps(x)
         if self.graph_regression:
@@ -911,3 +896,110 @@ class RedrawProjection:
             self.num_last_redraw = 0
             return
         self.num_last_redraw += 1
+
+
+class SAT(StructureAwareTransformer):
+    def __init__(
+        self,
+        input_dim,
+        output_dim,
+        model_params,
+        graph_regression
+    ):
+        super().__init__(
+            in_size=input_dim,
+            num_class=output_dim,
+            d_model=model_params["hidden_dim"],
+            dim_feedforward=2*model_params["hidden_dim"],
+            num_heads=4,
+            num_layers=model_params["num_layers"],
+            batch_norm=True,
+            gnn_type="pna",
+            use_edge_attr=True,
+            num_edge_features=model_params["edge_dim"],
+            edge_dim=model_params["edge_dim"],
+            k_hop=3,
+            se="gnn",
+            global_pool="add",
+            in_embed=False,
+            edge_embed=False,
+            deg=model_params.pop("deg", False),
+        )
+        self.graph_regression = graph_regression
+
+    def forward(self, *args, **kwargs):
+        self.logits = super().forward(*args, **kwargs)
+        if self.graph_regression:
+            return self.logits
+        else:
+            self.probs = F.log_softmax(self.logits, dim=-1)
+            return self.probs
+        
+
+class EXPHORMER(GNN_basic):
+    def __init__(
+        self,
+        input_dim,
+        output_dim,
+        model_params,
+        graph_regression
+    ):
+        super().__init__(
+            input_dim,
+            output_dim,
+            model_params,
+            graph_regression,
+        )
+
+        self.pe_dim = self.hidden_dim // 8
+        self.node_emb = nn.Linear(input_dim - 20, self.hidden_dim - self.pe_dim)
+        self.edge_emb = nn.Linear(self.edge_dim, self.hidden_dim)
+        self.pe_lin = nn.Linear(20, self.pe_dim)
+        self.pe_norm = nn.BatchNorm1d(20)
+
+
+    def get_layers(self):
+
+        self.convs = ExphormerModel(
+            hidden_dim = self.hidden_dim,
+            num_layers = self.num_layers,
+            num_heads = 4
+        )
+
+        # FC layers
+        mlp_dim = self.hidden_dim
+        self.mlps = nn.Sequential(
+            nn.Linear(mlp_dim, mlp_dim),
+            nn.LeakyReLU(),
+            nn.Linear(mlp_dim, self.output_dim))
+        
+        self.redraw_projection = RedrawProjection(
+            self.convs,
+            redraw_interval=None
+        )
+        return
+    
+    def get_emb(self, data, **kwargs):
+        x, edge_index, edge_attr, edge_weight, batch = self._argsparse(data, **kwargs)
+        x_node = self.node_emb(x[:, :3].squeeze(-1))
+        x_pe = self.pe_lin(self.pe_norm(x[:, -20:]))
+        x = torch.cat((x_node, x_pe), 1)
+        edge_attr = self.edge_emb(edge_attr*edge_weight[:, None])
+
+        data = Data(
+            x=x, edge_index=edge_index, 
+            edge_attr=edge_attr*edge_weight[:, None], batch=batch
+        )
+        return self.convs(data)
+    
+    def forward(self, data, **kwargs):
+        _, _, _, _, batch = self._argsparse(data, **kwargs)
+        # node embedding for GNN
+        emb = self.get_emb(data, **kwargs)
+        x = self.readout_layer(emb, batch)
+        self.logits = self.mlps(x)
+        if self.graph_regression:
+            return self.logits
+        else:
+            self.probs = F.log_softmax(self.logits, dim=-1)
+            return self.probs
