@@ -55,6 +55,7 @@ class TrainModel(object):
         self.save_name = save_name
         self.seed = seed
         check_dir(self.save_dir)
+        self.best_state_dict = None
 
         if self.graph_classification or self.graph_regression:
             self.dataloader_params = kwargs.get("dataloader_params")
@@ -159,28 +160,46 @@ class TrainModel(object):
         self.model.eval()
 
         if self.graph_classification:
-            losses, accs, balanced_accs, f1_scores = [], [], [], []
+            losses, accs, balanced_accs = [], [], []
+            f1_scores_w, precision_scores_w, recall_scores_w = [], [], []
+            f1_scores_m, precision_scores_m, recall_scores_m = [], [], []
             for batch in self.loader[0]["eval"]:
                 batch = batch.to(self.device)
                 loss, batch_preds, logits = self._eval_batch(batch, batch.y)
                 losses.append(loss)
                 accs.append(batch_preds == batch.y)
                 balanced_accs.append(balanced_accuracy_score(batch.y.cpu(), batch_preds.cpu()))
-                f1_scores.append(f1_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
+                f1_scores_w.append(f1_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
+                f1_scores_m.append(f1_score(batch.y.cpu(), batch_preds.cpu(), average="macro"))
+                precision_scores_w.append(precision_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
+                precision_scores_m.append(precision_score(batch.y.cpu(), batch_preds.cpu(), average="macro"))
+                recall_scores_w.append(recall_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
+                recall_scores_m.append(recall_score(batch.y.cpu(), batch_preds.cpu(), average="macro"))
             eval_loss = torch.tensor(losses).mean().item()
             eval_acc = torch.cat(accs, dim=-1).float().mean().item()
             eval_balanced_acc = np.mean(balanced_accs)
-            eval_f1_score = np.mean(f1_scores)
+            eval_f1_score_w = np.mean(f1_scores_w)
+            eval_f1_score_m = np.mean(f1_scores_m)
+            eval_precision_w = np.mean(precision_scores_w)
+            eval_precision_m = np.mean(precision_scores_m)
+            eval_recall_w = np.mean(recall_scores_w)
+            eval_recall_m = np.mean(recall_scores_m)
             print(
-                f"Eval loss: {eval_loss:.4f}, Eval acc {eval_acc:.4f}, balanced eval acc {eval_balanced_acc:.4f}, eval f1 score {eval_f1_score:.4f}"
+                f"Eval loss: {eval_loss:.4f}, Eval acc {eval_acc:.4f}, balanced eval acc {eval_balanced_acc:.4f}, eval f1 score {eval_f1_score_w:.4f}"
             )
             scores = {
                 "eval_loss": eval_loss,
                 "eval_acc": eval_acc,
                 "eval_balanced_acc": eval_balanced_acc,
+                "eval_f1_score_w": eval_f1_score_w,
+                "eval_f1_score_m": eval_f1_score_m,
+                "eval_precision_w": eval_precision_w,
+                "eval_precision_m": eval_precision_m,
+                "eval_recall_w": eval_recall_w,
+                "eval_recall_m": eval_recall_m
             }
             self.save_scores(scores, set="eval")
-            return eval_loss, eval_acc, eval_balanced_acc, eval_f1_score
+            return eval_loss, eval_acc, eval_balanced_acc, eval_f1_score_w
         elif self.graph_regression:
             losses, r2scores = [], []
             for batch in self.loader[0]["eval"]:
@@ -236,6 +255,8 @@ class TrainModel(object):
         """
         if self.graph_classification:
             losses, preds, targets, accs, balanced_accs = [], [], [], [], []
+            f1_scores_w, precision_scores_w, recall_scores_w = [], [], []
+            f1_scores_m, precision_scores_m, recall_scores_m = [], [], []
             for batch in self.loader[0]["test"]:
                 batch = batch.to(self.device)
                 loss, batch_preds, logits = self._eval_batch(batch, batch.y)
@@ -244,12 +265,24 @@ class TrainModel(object):
                 targets.append(batch.y)
                 accs.append(batch_preds == batch.y)
                 balanced_accs.append(balanced_accuracy_score(batch.y.cpu(), batch_preds.cpu()))
+                f1_scores_w.append(f1_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
+                f1_scores_m.append(f1_score(batch.y.cpu(), batch_preds.cpu(), average="macro"))
+                precision_scores_w.append(precision_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
+                precision_scores_m.append(precision_score(batch.y.cpu(), batch_preds.cpu(), average="macro"))
+                recall_scores_w.append(recall_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
+                recall_scores_m.append(recall_score(batch.y.cpu(), batch_preds.cpu(), average="macro"))
 
             test_loss = torch.tensor(losses).mean().item()
             preds = torch.vstack(preds)
             targets = torch.cat(targets, dim=-1)
             test_acc = torch.cat(accs, dim=-1).float().mean().item()
             test_balanced_acc = np.mean(balanced_accs)
+            test_f1_score_w = np.mean(f1_scores_w)
+            test_f1_score_m = np.mean(f1_scores_m)
+            test_precision_w = np.mean(precision_scores_w)
+            test_precision_m = np.mean(precision_scores_m)
+            test_recall_w = np.mean(recall_scores_w)
+            test_recall_m = np.mean(recall_scores_m)
 
             print(
                 f"Test loss: {test_loss:.4f}, test acc {test_acc:.4f}, balanced test acc {test_balanced_acc:.4f}"
@@ -258,6 +291,12 @@ class TrainModel(object):
             "test_loss": test_loss,
             "test_acc": test_acc,
             "test_balanced_acc": test_balanced_acc,
+            "test_f1_score_w": test_f1_score_w,
+            "test_f1_score_m": test_f1_score_m,
+            "test_precision_w": test_precision_w,
+            "test_precision_m": test_precision_m,
+            "test_recall_w": test_recall_w,
+            "test_recall_m": test_recall_m
             }
             self.save_scores(scores, set="test")
             return test_loss, test_acc, test_balanced_acc, preds, targets
@@ -425,11 +464,13 @@ class TrainModel(object):
         state = {"net": self.model.state_dict()}
         for key, value in recording.items():
             state[key] = value
-        best_pth_name = f"{self.save_name}_best.pth"
-        ckpt_path = os.path.join(self.save_dir, best_pth_name)
+        latest_pth_name = f"{self.save_name}_latest.pth"
+        ckpt_path = os.path.join(self.save_dir, latest_pth_name)
         torch.save(state, ckpt_path)
         if is_best:
             print("saving best...")
+            best_pth_name = f"{self.save_name}_best.pth"
+            ckpt_path = os.path.join(self.save_dir, best_pth_name)
             torch.save(state, ckpt_path)
         self.model.to(self.device)
 
