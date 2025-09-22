@@ -15,7 +15,9 @@ licensed under **[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)**.
 Modifications copyright © 2025 pasplett.
 
 Changes to the original code also include code from the following repositories:
+
 - https://github.com/phoeenniixx/pytorch_geometric/tree/exphormer (MIT license)
+
 - https://github.com/BorgwardtLab/SAT/tree/main (BSD 3-Clause License)
 
 Original license files can be found in the corresponding folders.
