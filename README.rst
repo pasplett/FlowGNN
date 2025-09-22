@@ -2,7 +2,10 @@
 FlowGNN
 =======
 
-   Official Python code for the paper "Flow-Attentional Graph Neural Networks".
+   Official Python code for the paper "Flow-Attentional Graph Neural Networks" [1].
+
+   [1] Plettenberg, P., Köhler, D., Sick, B., Thomas, J. M.: *Flow-Attentional Graph Neural Networks*. Transactions on Machine Learning Research (2025).
+   Link: https://openreview.net/forum?id=tOzg7UxTPD
 
 This repository is divided into two distinct sections. 
 
@@ -11,3 +14,4 @@ This repository is divided into two distinct sections.
 
 .. image:: ./flowgnn.png
     :height: 450px
+
