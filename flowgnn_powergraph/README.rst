@@ -6,9 +6,23 @@ FlowGNN on PowerGraph
     Code for the experiments with the FlowGNN models on the PowerGraph dataset.
 
 
-This repository is based on the original PowerGraph repository:
+==============
+Credits
+==============
 
-https://github.com/PowerGraph-Datasets/PowerGraph-Graph
+This project is a fork of **PowerGraph-Datasets/PowerGraph-Graph (https://github.com/PowerGraph-Datasets/PowerGraph-Graph)** by **avarbella**,
+licensed under **[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)**.
+Modifications copyright © 2025 pasplett.
+
+Changes to the original code also include code from the following repositories:
+- https://github.com/phoeenniixx/pytorch_geometric/tree/exphormer (MIT license)
+- https://github.com/BorgwardtLab/SAT/tree/main (BSD 3-Clause License)
+
+Original license files can be found in the corresponding folders.
+
+==============
+Changes Made
+==============
 
 Compared to the original code, we added the following models to gnn.model:
 
@@ -20,6 +34,10 @@ Compared to the original code, we added the following models to gnn.model:
 - GraphGPS
 - SAT
 - Exphormer
+
+Further changes:
+
+- Additional evaluation metrics in train_gnn.py
 
 ==============
 Installation
@@ -47,10 +65,16 @@ For more details, see https://github.com/PowerGraph-Datasets/PowerGraph-Graph.
 Training
 ==============
 
-To test the datasets with different GNN architectures: GCN, GINe, GAT and Transformer, run,
+To train different GNN architectures  (GCN, GAT, FlowGAT, ...) on the PowerGraph dataset, run:
 
 .. code-block:: python
 
     python code/train_gnn.py
 
 For more details, see https://github.com/PowerGraph-Datasets/PowerGraph-Graph.
+
+==============
+License
+==============
+
+This work is licensed under a CC BY 4.0 license.
