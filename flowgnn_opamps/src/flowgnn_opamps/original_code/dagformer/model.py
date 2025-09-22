@@ -8,8 +8,9 @@ import torch_geometric.utils as utils
 from torch_scatter import scatter_add, scatter_mean
 from einops import rearrange
 
-from .utils_dag_transformer import pad_batch, unpad_batch, add_order_info
-
+from flowgnn_opamps.original_code.dagformer.utils_dag_transformer import (
+    pad_batch, unpad_batch, add_order_info
+)
 
 class GraphTransformerEncoder(nn.TransformerEncoder):
     def forward(self, x, SAT, edge_index, mask_dag_, dag_rr_edge_index,
