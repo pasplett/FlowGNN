@@ -13,6 +13,21 @@ FlowGNN on Ckt-Bench101
 
 
 ==============
+Credits
+==============
+
+This project contains original code from the following repositories:
+
+- https://github.com/zehao-dong/CktGNN (MIT License)
+
+- https://github.com/LUOyk1999/DAGformer (MIT License)
+
+- https://github.com/zehao-dong/PACE (MIT License)
+
+Original license files can be found in the corresponding folders.
+
+
+==============
 Installation
 ==============
 
