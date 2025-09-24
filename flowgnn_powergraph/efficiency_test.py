@@ -20,6 +20,9 @@ import torch.nn.functional as F
 from gnn.model import get_gnnNets
 from utils.path import MODEL_DIR
 import time
+import torch_geometric.transforms as T
+from torch_geometric.utils import degree
+
 
 # Save directory model_name + dataset_name + layers + hidden_dim
 
@@ -164,6 +167,14 @@ def train_gnn(args, args_group):
     )
     dataset.data.x = dataset.data.x.float()
 
+    if args.model_name in ["graphgps", "exphormer"]:
+        # Compute positional encodings
+        pre_transform = T.AddLaplacianEigenvectorPE(
+            k=20, attr_name='pe'
+        )
+        pe = pre_transform(dataset.data).pe.to(device)
+        dataset.data.x = torch.cat((dataset.data.x, pe), dim=-1)
+
     if args.datatype == 'regression':
         args.graph_regression = "True"
         args.graph_classification = "False"
@@ -184,6 +195,21 @@ def train_gnn(args, args_group):
             "data_split_ratio": [args.train_ratio, args.val_ratio, args.test_ratio],
             "seed": args.seed,
         }
+
+    if model_params["model_name"] == "sat":
+        max_degree = -1
+        for data in dataset:
+            d = degree(data.edge_index[1], num_nodes=data.num_nodes, dtype=torch.long)
+            max_degree = max(max_degree, int(d.max()))
+
+        # Compute the in-degree histogram tensor
+        deg = torch.zeros(max_degree + 1, dtype=torch.long)
+        for data in dataset:
+            d = degree(data.edge_index[1], num_nodes=data.num_nodes, dtype=torch.long)
+            deg += torch.bincount(d, minlength=deg.numel())
+
+        model_params["deg"] = deg
+
     # get model
     model = get_gnnNets(args.num_node_features, args.num_classes, model_params, eval(args.graph_regression))
 
@@ -197,7 +223,7 @@ def train_gnn(args, args_group):
             graph_classification=eval(args.graph_classification),
             graph_regression=eval(args.graph_regression),
             save_dir=os.path.join(args.model_save_dir, args.dataset_name),
-            save_name=f"{args.dataset_name}_{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}hid_{args.heads}h_{args.seed}s",
+            save_name=f"{args.dataset_name}_{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}hid_{args.seed}s",
             dataloader_params=dataloader_params,
         )
     else:
@@ -209,7 +235,7 @@ def train_gnn(args, args_group):
             graph_classification=eval(args.graph_classification),
             graph_regression=eval(args.graph_regression),
             save_dir=os.path.join(args.model_save_dir, args.dataset_name),
-            save_name=f"{args.dataset_name}_{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}hid_{args.heads}h_{args.seed}s",
+            save_name=f"{args.dataset_name}_{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}hid_{args.seed}s",
             dataloader_params=dataloader_params,
         ) 
 
@@ -229,9 +255,14 @@ if __name__ == "__main__":
 
     # for loop the training architecture for the number of layers and hidden dimensions
     rnd_seeds = [0]
-    tasks = ['multiclass'] #['binary', 'multiclass', 'regression']
-    powergrids = ['ieee24', 'uk', 'ieee39', 'ieee118']
-    models = ['gat', 'gatv2', 'gt', 'flowgat', 'flowgatv2', 'flowtransformer']
+    tasks = ['multiclass']
+    powergrids = ['ieee24'] #['ieee24', 'uk', 'ieee39', 'ieee118']
+    models = [
+        'gcn', 'gin', 'graphsage',
+        'gat', 'gatv2', 'transformer', 
+        'flowgat', 'flowgatv2', 'flowtransformer',
+        'graphgps', 'sat', 'exphormer'
+    ]
     for powergrid in powergrids:
         args.dataset_name = powergrid
         for task in tasks:
