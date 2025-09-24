@@ -11,9 +11,9 @@ from torch_geometric.utils import softmax
 from torch_geometric.nn.glob import *
 from torch_geometric.nn import MessagePassing, GATConv
 
-from flowgnn_opamps.original_code.models_pyg import DVAE_BN_PYG
-from flowgnn_opamps.original_code.constants import *
-from flowgnn_opamps.original_code.batch import Batch
+from flowgnn_opamps.original_code.cktgnn.models_pyg import DVAE_BN_PYG
+from flowgnn_opamps.original_code.cktgnn.constants import *
+from flowgnn_opamps.original_code.cktgnn.batch import Batch
 #from torch_geometric.data import Batch
 
 
