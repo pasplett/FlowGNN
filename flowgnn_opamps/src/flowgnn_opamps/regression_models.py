@@ -14,11 +14,11 @@ from torch_geometric.nn import (
 from torch_geometric.utils import to_dense_adj
 from torch_geometric.nn.models import MLP
 
-from flowgnn_opamps.original_code.constants import *
-from flowgnn_opamps.original_code.models_ig import DVAE
-from flowgnn_opamps.original_code.pace import PACE_VAE
-from flowgnn_opamps.original_code.dag_transformer import GraphTransformer
-from flowgnn_opamps.original_code.utils_dag_transformer import add_order_info
+from flowgnn_opamps.original_code.cktgnn.constants import *
+from flowgnn_opamps.original_code.cktgnn.models_ig import DVAE
+from flowgnn_opamps.original_code.pace.model import PACE_VAE
+from flowgnn_opamps.original_code.dagformer.model import GraphTransformer
+from flowgnn_opamps.original_code.dagformer.utils import add_order_info
 from flowgnn_opamps.conv import FlowGATConv, FlowGATv2Conv, FlowTransformerConv
 
 class BaseRegression(nn.Module):

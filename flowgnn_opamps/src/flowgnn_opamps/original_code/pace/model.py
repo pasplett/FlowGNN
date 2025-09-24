@@ -8,7 +8,7 @@ import numpy as np
 import igraph
 from torch.nn.init import xavier_uniform_, constant_, xavier_normal_
 from torch.nn.functional import *
-from utils_pace import longest_path
+from flowgnn_opamps.original_code.pace.utils import longest_path
 from torch.nn import LayerNorm
 
 def multi_head_attention_func(query,                           # type: Tensor

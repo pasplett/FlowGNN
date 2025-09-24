@@ -8,7 +8,7 @@ import torch_geometric.utils as utils
 from torch_scatter import scatter_add, scatter_mean
 from einops import rearrange
 
-from flowgnn_opamps.original_code.dagformer.utils_dag_transformer import (
+from flowgnn_opamps.original_code.dagformer.utils import (
     pad_batch, unpad_batch, add_order_info
 )
 

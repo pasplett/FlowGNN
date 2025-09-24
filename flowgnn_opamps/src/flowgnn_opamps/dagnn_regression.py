@@ -2,14 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from flowgnn_opamps.original_code.constants import *
-from flowgnn_opamps.original_code.dagnn_pyg import DAGNN as OriginalDAGNN
-from flowgnn_opamps.original_code.batch import Batch
+from flowgnn_opamps.original_code.cktgnn.constants import *
+from flowgnn_opamps.original_code.cktgnn.dagnn_pyg import DAGNN as OriginalDAGNN
+from flowgnn_opamps.original_code.cktgnn.batch import Batch
 
 class DAGNN(nn.Module):
     """Regression model based on DAGNN [1].
     
-    Thost, Veronika, and Jie Chen. "Directed acyclic graph neural networks." 
+    [1] Thost, Veronika, and Jie Chen. "Directed acyclic graph neural networks." 
     International Conference on Learning Representations (2021).
     """
     def __init__(
