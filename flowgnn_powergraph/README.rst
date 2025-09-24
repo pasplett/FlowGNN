@@ -45,10 +45,10 @@ Further changes:
 Installation
 ==============
 
-- CPU or NVIDIA GPU, Linux, Python 3.7
-- PyTorch >= 1.5.0, other packages
+- CPU or NVIDIA GPU, Linux, Python 3.9
+- PyTorch >= 2.4.0, other packages
 
-Load every additional packages:
+Install additional packages:
 
 .. code-block:: python
 
