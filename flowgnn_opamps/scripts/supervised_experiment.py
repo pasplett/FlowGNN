@@ -29,7 +29,7 @@ from flowgnn_opamps.utils import (
     test_igraph_supervised
 )
 from flowgnn_opamps.callbacks import EarlyStoppingCB
-from flowgnn_opamps.original_code.constants import *
+from flowgnn_opamps.original_code.cktgnn.constants import *
 
 # Check GPU availability
 gpu_available = torch.cuda.is_available()
@@ -50,13 +50,13 @@ target_file = "./../data/perform101.csv" # Target properties
 num_runs = 10
 start_run = 0
 seeds = [4, 42, 420, 4204, 42042, 420420, 4204204, 42042042, 420420420, 4204204204]
-model_names = ["flowgat", "flowgatv2", "flowtransformer", "flowdagnn"]
+model_names = ["flowdagnn"]
 properties = ["gain", "bw", "fom"]
 
 # Training hyperparameters
 batch_size = 64
 infer_batch_size = 128
-num_epochs = 1
+num_epochs = 100
 learning_rate = 0.0001
 save_interval = 1000
 pred_hidden_channels = 64
