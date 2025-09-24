@@ -405,7 +405,6 @@ class GATV2(GNN_basic):
 
 class FLOWGAT(GNN_basic):
     def __init__(self, input_dim, output_dim, model_params, graph_regression):
-        self.heads = model_params["heads"]
         super().__init__(
             input_dim,
             output_dim,

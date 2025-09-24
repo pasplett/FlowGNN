@@ -26,6 +26,12 @@ from sklearn.metrics import balanced_accuracy_score, f1_score, r2_score, roc_auc
 import json
 from utils.path import MODEL_DIR
 from scipy.special import softmax
+import torch_geometric.transforms as T
+from torch_geometric.utils import degree
+
+# Suppress sklearn warning cause by imbalanced dataset
+warnings.filterwarnings("ignore", message="y_pred contains classes not in y_true")
+warnings.filterwarnings("ignore", message="A single label was found in 'y_true' and 'y_pred'.")
 
 # Save directory model_name + dataset_name + layers + hidden_dim
 
@@ -153,7 +159,8 @@ class TrainModel(object):
     
     def eval_best(self):
         state_dict = torch.load(
-            os.path.join(self.save_dir, f"{self.save_name}_best.pth")
+            os.path.join(self.save_dir, f"{self.save_name}_best.pth"),
+            weights_only=True
         )["net"]
         self.model.load_state_dict(state_dict)
         self.model = self.model.to(self.device)
@@ -171,10 +178,10 @@ class TrainModel(object):
                 balanced_accs.append(balanced_accuracy_score(batch.y.cpu(), batch_preds.cpu()))
                 f1_scores_w.append(f1_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
                 f1_scores_m.append(f1_score(batch.y.cpu(), batch_preds.cpu(), average="macro"))
-                precision_scores_w.append(precision_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
-                precision_scores_m.append(precision_score(batch.y.cpu(), batch_preds.cpu(), average="macro"))
-                recall_scores_w.append(recall_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
-                recall_scores_m.append(recall_score(batch.y.cpu(), batch_preds.cpu(), average="macro"))
+                precision_scores_w.append(precision_score(batch.y.cpu(), batch_preds.cpu(), average="weighted", zero_division=0.0))
+                precision_scores_m.append(precision_score(batch.y.cpu(), batch_preds.cpu(), average="macro", zero_division=0.0))
+                recall_scores_w.append(recall_score(batch.y.cpu(), batch_preds.cpu(), average="weighted", zero_division=0.0))
+                recall_scores_m.append(recall_score(batch.y.cpu(), batch_preds.cpu(), average="macro", zero_division=0.0))
             eval_loss = torch.tensor(losses).mean().item()
             eval_acc = torch.cat(accs, dim=-1).float().mean().item()
             eval_balanced_acc = np.mean(balanced_accs)
@@ -223,7 +230,8 @@ class TrainModel(object):
 
     def test(self):
         state_dict = torch.load(
-            os.path.join(self.save_dir, f"{self.save_name}_best.pth")
+            os.path.join(self.save_dir, f"{self.save_name}_best.pth"),
+            weights_only=True
         )["net"]
         self.model.load_state_dict(state_dict)
         self.model = self.model.to(self.device)
@@ -267,10 +275,10 @@ class TrainModel(object):
                 balanced_accs.append(balanced_accuracy_score(batch.y.cpu(), batch_preds.cpu()))
                 f1_scores_w.append(f1_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
                 f1_scores_m.append(f1_score(batch.y.cpu(), batch_preds.cpu(), average="macro"))
-                precision_scores_w.append(precision_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
-                precision_scores_m.append(precision_score(batch.y.cpu(), batch_preds.cpu(), average="macro"))
-                recall_scores_w.append(recall_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
-                recall_scores_m.append(recall_score(batch.y.cpu(), batch_preds.cpu(), average="macro"))
+                precision_scores_w.append(precision_score(batch.y.cpu(), batch_preds.cpu(), average="weighted", zero_division=0.0))
+                precision_scores_m.append(precision_score(batch.y.cpu(), batch_preds.cpu(), average="macro", zero_division=0.0))
+                recall_scores_w.append(recall_score(batch.y.cpu(), batch_preds.cpu(), average="weighted", zero_division=0.0))
+                recall_scores_m.append(recall_score(batch.y.cpu(), batch_preds.cpu(), average="macro", zero_division=0.0))
 
             test_loss = torch.tensor(losses).mean().item()
             preds = torch.vstack(preds)
@@ -477,7 +485,8 @@ class TrainModel(object):
     # Load the best model
     def load_model(self):
         state_dict = torch.load(
-            os.path.join(self.save_dir, f"{self.save_name}_best.pth")
+            os.path.join(self.save_dir, f"{self.save_name}_best.pth"),
+            weights_only=True
         )["net"]
         self.model.load_state_dict(state_dict)
         self.model.to(self.device)
@@ -507,6 +516,14 @@ def train_gnn(args, args_group):
     )
     dataset.data.x = dataset.data.x.float()
 
+    if args.model_name in ["graphgps", "exphormer"]:
+        # Compute positional encodings
+        pre_transform = T.AddLaplacianEigenvectorPE(
+            k=20, attr_name='pe'
+        )
+        pe = pre_transform(dataset.data).pe.to(device)
+        dataset.data.x = torch.cat((dataset.data.x, pe), dim=-1)
+
     if args.datatype == 'regression':
         args.graph_regression = "True"
         args.graph_classification = "False"
@@ -527,6 +544,23 @@ def train_gnn(args, args_group):
             "data_split_ratio": [args.train_ratio, args.val_ratio, args.test_ratio],
             "seed": args.seed,
         }
+
+
+    if model_params["model_name"] == "sat":
+        max_degree = -1
+        for data in dataset:
+            d = degree(data.edge_index[1], num_nodes=data.num_nodes, dtype=torch.long)
+            max_degree = max(max_degree, int(d.max()))
+
+        # Compute the in-degree histogram tensor
+        deg = torch.zeros(max_degree + 1, dtype=torch.long)
+        for data in dataset:
+            d = degree(data.edge_index[1], num_nodes=data.num_nodes, dtype=torch.long)
+            deg += torch.bincount(d, minlength=deg.numel())
+
+        model_params["deg"] = deg
+
+
     # get model
     model = get_gnnNets(args.num_node_features, args.num_classes, model_params, eval(args.graph_regression))
 
@@ -648,18 +682,23 @@ if __name__ == "__main__":
     args = get_graph_size_args(args)
 
     # for loop the training architecture for the number of layers and hidden dimensions
-    rnd_seeds = [0, 100, 200, 300, 400]
+    rnd_seeds = [0]
     tasks = ['multiclass'] 
     powergrids = ['ieee24'] #['ieee24', 'uk', 'ieee39', 'ieee118']
-    models = ['gat', 'gatv2', 'transformer', 'flowgat', 'flowgatv2', 'transformer']
+    models = [
+        'gcn', 'gin', 'graphsage', 
+        'gat', 'gatv2', 'transformer', 
+        'flowgat', 'flowgatv2', 'flowtransformer',
+        'graphgps', 'sat', 'exphormer'
+    ]
     
     for powergrid in powergrids:
         args.dataset_name = powergrid
         for task in tasks:
             args.datatype = task
-            for num_layers in [3, 2, 1]:
+            for num_layers in [3]:
                 args.num_layers = num_layers
-                for hidden_dim in [32, 16]:
+                for hidden_dim in [32]:
                     args.hidden_dim = hidden_dim
                     for model in models:
                         args.model_name = model

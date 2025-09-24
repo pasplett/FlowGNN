@@ -309,7 +309,7 @@ def arg_parse():
         num_explained_y=5,
         opt="adam",
         lr=0.001,
-        num_epochs=1,
+        num_epochs=100,
         train_ratio=0.85,
         val_ratio=0.05,
         test_ratio=0.1,
