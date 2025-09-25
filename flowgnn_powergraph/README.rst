@@ -71,7 +71,7 @@ To train different GNN architectures  (GCN, GAT, FlowGAT, ...) on the PowerGraph
 
 .. code-block:: python
 
-    python code/train_gnn.py
+    python train_gnn.py
 
 For more details, see https://github.com/PowerGraph-Datasets/PowerGraph-Graph.
 
